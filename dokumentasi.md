@@ -1,0 +1,635 @@
+# Dokumentasi Sistem Manajemen Arsip
+
+## Ringkasan
+
+Sistem Manajemen Arsip adalah aplikasi berbasis web modular yang dibangun dengan:
+- **Frontend**: React + Vite + TypeScript
+- **UI Library**: Mantine UI
+- **Backend**: Supabase (Database, Auth, Storage)
+- **State Management**: Zustand
+
+## Arsitektur Modular
+
+Sistem ini dirancang dengan arsitektur modular agar dapat:
+1. Di-deploy ulang untuk instansi berbeda tanpa perubahan kode inti
+2. Dikonfigurasi melalui file JSON atau database
+3. Menambah/mengurangi modul sesuai kebutuhan
+
+## Struktur Folder
+
+```
+src/
+├── components/           # Komponen reusable
+│   ├── Archive/         # Komponen arsip (Card, Table, Form)
+│   ├── Auth/            # Komponen autentikasi
+│   └── Layout/          # Layout dan navigasi
+├── config/              # File konfigurasi
+│   └── institution.config.json  # Konfigurasi instansi
+├── lib/                 # Library dan utilities
+│   └── supabase.ts      # Supabase client
+├── pages/               # Halaman aplikasi
+│   ├── DashboardPage.tsx
+│   ├── LoginPage.tsx
+│   └── PublicArchivePage.tsx
+├── services/            # Service layer untuk API
+│   ├── archiveService.ts
+│   ├── categoryService.ts
+│   ├── tagService.ts
+│   └── activityLogService.ts
+├── stores/              # Zustand stores
+│   ├── authStore.ts
+│   └── configStore.ts
+├── types/               # TypeScript types
+│   ├── database.types.ts
+│   └── index.ts
+└── utils/               # Utility functions
+    └── formatters.ts
+```
+
+## Database Schema
+
+### Tabel Utama
+
+1. **settings** - Konfigurasi sistem
+2. **modules** - Modul yang aktif/non-aktif
+3. **categories** - Kategori arsip
+4. **tags** - Tags untuk arsip
+5. **archives** - Data arsip utama
+6. **archive_metadata** - Metadata dinamis per arsip
+7. **archive_tags** - Relasi arsip dengan tags
+8. **activity_logs** - Log aktivitas pengguna
+
+## Konfigurasi Instansi
+
+File: `src/config/institution.config.json`
+
+```json
+{
+  "institutionName": "Nama Instansi Anda",
+  "modules": {
+    "retention": false,
+    "publicArchive": true,
+    "tagging": true,
+    "versioning": true,
+    "metadataDynamic": true
+  },
+  "metadataSchema": [
+    {
+      "field": "nomor_surat",
+      "label": "Nomor Surat",
+      "type": "text",
+      "required": true
+    }
+  ],
+  "theme": {
+    "primaryColor": "blue",
+    "defaultColorScheme": "light"
+  },
+  "storage": {
+    "bucketName": "archives",
+    "maxFileSize": 10485760,
+    "allowedFileTypes": [".pdf", ".doc", ".docx"]
+  }
+}
+```
+
+## Setup Awal
+
+### 1. Environment Variables
+
+Buat file `.env` dengan konten:
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 2. Supabase Storage
+
+Buat bucket bernama `archives` di Supabase Storage:
+
+```sql
+-- Via SQL Editor di Supabase
+insert into storage.buckets (id, name, public)
+values ('archives', 'archives', true);
+```
+
+### 3. Install Dependencies
+
+```bash
+npm install
+```
+
+### 4. Run Development Server
+
+```bash
+npm run dev
+```
+
+## Fitur yang Sudah Diimplementasikan
+
+### ✅ Core Features
+
+1. **Autentikasi**
+   - Login dengan email/password (Supabase Auth)
+   - Session management
+   - Protected routes
+
+2. **Dashboard**
+   - Statistik overview
+   - UI dasar dengan Mantine
+
+3. **Arsip Publik**
+   - Halaman tanpa login: `/public-archive`
+   - Filter dan pencarian
+   - Download file
+
+4. **Komponen Reusable**
+   - `ArchiveCard` - Kartu arsip
+   - `ArchiveTable` - Tabel arsip
+   - `MetadataFormDynamic` - Form metadata dinamis
+   - `AppLayout` - Layout aplikasi
+   - `LoginForm` - Form login
+
+5. **Service Layer**
+   - Archive CRUD operations
+   - Upload/download files
+   - Metadata management
+   - Activity logging
+
+6. **Database & Migrations**
+   - Schema lengkap dengan RLS
+   - Default categories & modules
+   - Indexes untuk performa
+
+---
+
+## Pengembangan Lanjutan
+
+Berikut adalah fitur-fitur yang perlu dikembangkan lebih lanjut:
+
+### 🔨 Halaman Manajemen Arsip (CRUD Lengkap)
+
+**File yang perlu dibuat:**
+- `src/pages/ArchivesPage.tsx`
+- `src/components/Archive/ArchiveFormModal.tsx`
+- `src/components/Archive/ArchiveUploadForm.tsx`
+
+**Fitur:**
+- List semua arsip dengan tabel/grid view
+- Form upload arsip baru + metadata dinamis
+- Edit arsip (update title, description, metadata, tags, category)
+- Delete arsip dengan konfirmasi
+- Preview file sebelum upload
+- Progress bar saat upload
+- Drag & drop file dengan Mantine Dropzone
+
+**Contoh implementasi upload:**
+
+```typescript
+import { Dropzone } from '@mantine/dropzone';
+
+// Di dalam component
+<Dropzone
+  onDrop={(files) => handleUpload(files)}
+  accept={['application/pdf', 'image/*']}
+  maxSize={config.storage.maxFileSize}
+>
+  {/* UI dropzone */}
+</Dropzone>
+
+// Handle upload
+const handleUpload = async (files: File[]) => {
+  const file = files[0];
+  const path = `${Date.now()}-${file.name}`;
+
+  await archiveService.uploadFile(file, path);
+
+  const archive = await archiveService.create({
+    title: form.values.title,
+    file_path: path,
+    file_name: file.name,
+    file_size: file.size,
+    file_type: file.type,
+    // ... other fields
+  });
+
+  // Create metadata
+  await metadataService.create(/* ... */);
+};
+```
+
+### 🔨 Halaman Manajemen Kategori
+
+**File:** `src/pages/CategoriesPage.tsx`
+
+**Fitur:**
+- CRUD categories
+- Color picker untuk warna kategori
+- Icon picker untuk ikon kategori
+- Hierarchical categories (parent-child)
+
+### 🔨 Halaman Manajemen Tags
+
+**File:** `src/pages/TagsPage.tsx`
+
+**Fitur:**
+- CRUD tags
+- Bulk assign tags ke arsip
+- Color picker untuk tags
+
+### 🔨 Halaman Activity Log
+
+**File:** `src/pages/ActivityLogPage.tsx`
+
+**Fitur:**
+- Tampilkan semua activity logs
+- Filter berdasarkan action, user, entity
+- Export logs ke CSV/Excel
+
+### 🔨 Search & Filtering Advanced
+
+**Enhancement untuk:**
+- `src/pages/ArchivesPage.tsx`
+- `src/pages/PublicArchivePage.tsx`
+
+**Fitur:**
+- Full-text search dengan metadata
+- Filter kombinasi (kategori + tags + date range)
+- Sort (by date, size, title)
+- Saved searches
+
+**Contoh advanced search:**
+
+```typescript
+const handleSearch = async () => {
+  const results = await archiveService.search(searchQuery, {
+    category_id: selectedCategory,
+    tags: selectedTags,
+    dateFrom: dateRange[0],
+    dateTo: dateRange[1],
+  });
+};
+```
+
+### 🔨 Versioning System
+
+**File:** `src/components/Archive/VersionHistory.tsx`
+
+**Fitur:**
+- List semua versi dari satu arsip
+- Upload versi baru (membuat parent_version_id reference)
+- Compare versions
+- Restore versi lama
+
+**Contoh implementasi:**
+
+```typescript
+// Create new version
+const createNewVersion = async (archiveId: string, file: File) => {
+  const currentArchive = await archiveService.getById(archiveId);
+
+  const newVersion = await archiveService.create({
+    ...currentArchive,
+    parent_version_id: archiveId,
+    version: currentArchive.version + 1,
+    file_path: newPath,
+    // ...
+  });
+};
+```
+
+### 🔨 Retention Policy Module
+
+**File:** `src/modules/retention/RetentionModule.tsx`
+
+**Fitur:**
+- Set retention period per kategori atau per arsip
+- Auto-delete atau auto-archive setelah retention period
+- Warning sebelum deletion
+- Cron job untuk check retention (bisa pakai Supabase Edge Functions)
+
+**Edge Function example:**
+
+```typescript
+// supabase/functions/retention-check/index.ts
+Deno.serve(async (req) => {
+  const { data: archives } = await supabase
+    .from('archives')
+    .select('*')
+    .lt('retention_date', new Date().toISOString());
+
+  // Process expired archives
+  for (const archive of archives) {
+    await supabase.from('archives').delete().eq('id', archive.id);
+  }
+
+  return new Response(JSON.stringify({ processed: archives.length }));
+});
+```
+
+### 🔨 Export & Reporting
+
+**File:** `src/pages/ReportsPage.tsx`
+
+**Fitur:**
+- Export arsip list ke CSV/Excel
+- Generate laporan statistik (per kategori, per bulan, dll)
+- Dashboard analytics dengan charts (gunakan Recharts atau Chart.js)
+
+**Library tambahan:**
+```bash
+npm install recharts xlsx
+```
+
+### 🔨 Bulk Operations
+
+**File:** `src/components/Archive/BulkActions.tsx`
+
+**Fitur:**
+- Select multiple arsip (checkbox)
+- Bulk delete
+- Bulk change category
+- Bulk add/remove tags
+- Bulk export
+
+### 🔨 Notification System
+
+**Enhancement:**
+- Real-time notifications dengan Supabase Realtime
+- Email notifications (via Edge Functions + external service)
+- In-app notifications dengan Mantine Notifications
+
+### 🔨 User Management (Optional)
+
+Jika butuh multiple users dengan roles:
+
+**Tables tambahan:**
+```sql
+CREATE TABLE user_profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users(id),
+  full_name text,
+  role text DEFAULT 'user',
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE roles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text UNIQUE,
+  permissions jsonb
+);
+```
+
+### 🔨 Advanced Modules System
+
+**Dynamic module loading:**
+
+```typescript
+// src/modules/index.ts
+const modules = {
+  retention: () => import('./retention/RetentionModule'),
+  workflow: () => import('./workflow/WorkflowModule'),
+  approval: () => import('./approval/ApprovalModule'),
+};
+
+// Load modules based on config
+const loadModules = async (enabledModules: string[]) => {
+  const loaded = await Promise.all(
+    enabledModules.map(name => modules[name]())
+  );
+  return loaded;
+};
+```
+
+### 🔨 Mobile Responsive Optimization
+
+**Enhancement:**
+- Optimize semua komponen untuk mobile
+- Add touch gestures
+- PWA support (service workers)
+
+### 🔨 Internationalization (i18n)
+
+**Library:**
+```bash
+npm install react-i18next i18next
+```
+
+**Implementasi:**
+- Support multiple languages (ID, EN, dll)
+- Language switcher di navbar
+
+---
+
+## Tips Pengembangan
+
+### 1. Menambah Field Metadata Baru
+
+Edit `src/config/institution.config.json`:
+
+```json
+{
+  "metadataSchema": [
+    {
+      "field": "field_baru",
+      "label": "Label Field",
+      "type": "text|textarea|date|number|select",
+      "required": true|false,
+      "options": ["option1", "option2"] // untuk type=select
+    }
+  ]
+}
+```
+
+### 2. Menambah Modul Baru
+
+1. Buat folder `src/modules/nama-modul/`
+2. Buat component utama modul
+3. Register di `institution.config.json`
+4. Update `modules` table di database
+5. Load conditional di aplikasi
+
+### 3. Customizing Theme
+
+Edit di `src/App.tsx`:
+
+```typescript
+const theme = createTheme({
+  primaryColor: 'blue', // bisa: blue, red, green, dll
+  fontFamily: 'Inter, sans-serif',
+  headings: {
+    fontFamily: 'Inter, sans-serif',
+  },
+});
+```
+
+### 4. Menambah Service Baru
+
+Contoh struktur service:
+
+```typescript
+// src/services/newService.ts
+import { supabase } from '../lib/supabase';
+
+export const newService = {
+  async getAll() {
+    const { data, error } = await supabase
+      .from('table_name')
+      .select('*');
+    if (error) throw error;
+    return data;
+  },
+
+  async create(item: any) {
+    const { data, error } = await supabase
+      .from('table_name')
+      .insert(item)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  // ... other CRUD methods
+};
+```
+
+### 5. Error Handling Best Practices
+
+```typescript
+try {
+  const result = await someService.method();
+
+  notifications.show({
+    title: 'Berhasil',
+    message: 'Operasi berhasil',
+    color: 'green',
+  });
+} catch (error) {
+  console.error('Error:', error);
+
+  notifications.show({
+    title: 'Error',
+    message: error instanceof Error ? error.message : 'Terjadi kesalahan',
+    color: 'red',
+  });
+}
+```
+
+---
+
+## Testing
+
+### Unit Testing (Belum diimplementasikan)
+
+**Setup:**
+```bash
+npm install -D vitest @testing-library/react @testing-library/jest-dom
+```
+
+**Contoh test:**
+```typescript
+// src/services/__tests__/archiveService.test.ts
+import { describe, it, expect } from 'vitest';
+import { archiveService } from '../archiveService';
+
+describe('archiveService', () => {
+  it('should fetch all archives', async () => {
+    const archives = await archiveService.getAll();
+    expect(Array.isArray(archives)).toBe(true);
+  });
+});
+```
+
+---
+
+## Deployment
+
+### Supabase Setup
+
+1. Buat project di [supabase.com](https://supabase.com)
+2. Copy URL dan Anon Key ke `.env`
+3. Run migrations via Supabase SQL Editor
+4. Create storage bucket `archives`
+
+### Build Production
+
+```bash
+npm run build
+```
+
+### Deploy Options
+
+1. **Vercel** (Recommended)
+   ```bash
+   npm install -g vercel
+   vercel
+   ```
+
+2. **Netlify**
+   - Connect repo
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+
+3. **Self-hosted**
+   - Upload `dist/` folder ke server
+   - Setup nginx/apache
+
+---
+
+## Troubleshooting
+
+### Error: "Missing Supabase environment variables"
+
+**Solusi:** Buat file `.env` dengan VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY
+
+### Error: "Failed to fetch archives"
+
+**Solusi:**
+1. Cek RLS policies di Supabase
+2. Pastikan user sudah login
+3. Cek connection string
+
+### File upload gagal
+
+**Solusi:**
+1. Cek bucket `archives` sudah dibuat
+2. Cek storage policies di Supabase
+3. Cek file size tidak melebihi limit
+
+---
+
+## Kontribusi & Customization
+
+Sistem ini dirancang untuk di-customize. Silakan:
+
+1. Fork/clone repository
+2. Sesuaikan `institution.config.json`
+3. Tambah modul sesuai kebutuhan
+4. Update database schema jika perlu
+5. Deploy ke environment Anda sendiri
+
+**Best Practice:**
+- Jangan modifikasi core files
+- Gunakan modules untuk fitur baru
+- Update config via JSON/database
+- Document semua custom changes
+
+---
+
+## Referensi
+
+- [Mantine UI Documentation](https://mantine.dev)
+- [Supabase Documentation](https://supabase.com/docs)
+- [React Documentation](https://react.dev)
+- [Zustand Documentation](https://zustand-demo.pmnd.rs)
+
+---
+
+## Lisensi
+
+Open Source - silakan digunakan dan dikembangkan sesuai kebutuhan instansi Anda.
+
+---
+
+**Dibuat dengan ❤️ untuk sistem manajemen arsip yang modular dan fleksibel**
