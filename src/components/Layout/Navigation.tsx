@@ -1,30 +1,36 @@
 import { NavLink, Stack } from '@mantine/core';
-import { IconHome, IconArchive, IconFolder, IconTags, IconActivity, IconWorld } from '@tabler/icons-react';
-import { useState } from 'react';
+import type { ComponentType } from 'react';
+import { Link } from 'react-router-dom';
 
-export function Navigation() {
-  const [active, setActive] = useState('dashboard');
+interface NavigationLink {
+  icon: ComponentType<{ size?: number }>;
+  label: string;
+  path: string;
+}
 
-  const links = [
-    { icon: IconHome, label: 'Dashboard', value: 'dashboard' },
-    { icon: IconArchive, label: 'Arsip', value: 'archives' },
-    { icon: IconFolder, label: 'Kategori', value: 'categories' },
-    { icon: IconTags, label: 'Tags', value: 'tags' },
-    { icon: IconActivity, label: 'Activity Log', value: 'activity' },
-    { icon: IconWorld, label: 'Arsip Publik', value: 'public' },
-  ];
+interface NavigationProps {
+  links: NavigationLink[];
+  activePath: string;
+  onNavigate?: () => void;
+}
 
+export function Navigation({ links, activePath, onNavigate }: NavigationProps) {
   return (
     <Stack gap="xs">
-      {links.map((link) => (
-        <NavLink
-          key={link.value}
-          active={active === link.value}
-          label={link.label}
-          leftSection={<link.icon size={20} />}
-          onClick={() => setActive(link.value)}
-        />
-      ))}
+      {links.map((link) => {
+        const IconComponent = link.icon;
+        return (
+          <NavLink
+            key={link.path}
+            component={Link}
+            to={link.path}
+            active={activePath === link.path}
+            label={link.label}
+            leftSection={<IconComponent size={20} />}
+            onClick={onNavigate}
+          />
+        );
+      })}
     </Stack>
   );
 }

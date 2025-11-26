@@ -23,6 +23,27 @@ export const tagService = {
     return data;
   },
 
+  async update(id: string, updates: Partial<Omit<Tag, 'id'>>) {
+    const { data, error } = await supabase
+      .from('tags')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Tag;
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase
+      .from('tags')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
   async addToArchive(archiveId: string, tagId: string) {
     const { error } = await supabase
       .from('archive_tags')

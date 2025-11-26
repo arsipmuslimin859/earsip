@@ -45,4 +45,40 @@ export const activityLogService = {
     if (error) throw error;
     return data as ActivityLog[];
   },
+
+  async query(filters?: {
+    action?: string;
+    userId?: string;
+    entityType?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    limit?: number;
+  }) {
+    let query = supabase
+      .from('activity_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(filters?.limit ?? 100);
+
+    if (filters?.action) {
+      query = query.ilike('action', `%${filters.action}%`);
+    }
+    if (filters?.userId) {
+      query = query.eq('user_id', filters.userId);
+    }
+    if (filters?.entityType) {
+      query = query.ilike('entity_type', `%${filters.entityType}%`);
+    }
+    if (filters?.dateFrom) {
+      query = query.gte('created_at', filters.dateFrom);
+    }
+    if (filters?.dateTo) {
+      query = query.lte('created_at', filters.dateTo);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return data as ActivityLog[];
+  },
 };

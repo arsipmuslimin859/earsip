@@ -131,36 +131,49 @@ npm run dev
 ### ✅ Core Features
 
 1. **Autentikasi**
-   - Login dengan email/password (Supabase Auth)
-   - Session management
-   - Protected routes
+    - Login dengan email/password (Supabase Auth)
+    - Session management
+    - Protected routes
 
 2. **Dashboard**
-   - Statistik overview
-   - UI dasar dengan Mantine
+    - Statistik overview
+    - UI dasar dengan Mantine
 
 3. **Arsip Publik**
-   - Halaman tanpa login: `/public-archive`
-   - Filter dan pencarian
-   - Download file
+    - Halaman tanpa login: `/public-archive`
+    - Filter dan pencarian
+    - Download file
 
-4. **Komponen Reusable**
-   - `ArchiveCard` - Kartu arsip
-   - `ArchiveTable` - Tabel arsip
-   - `MetadataFormDynamic` - Form metadata dinamis
-   - `AppLayout` - Layout aplikasi
-   - `LoginForm` - Form login
+4. **Manajemen Arsip Lengkap (CRUD)**
+    - Halaman `/archives` untuk manajemen arsip
+    - List arsip dengan tabel view
+    - Upload arsip baru dengan drag & drop
+    - Edit arsip (judul, deskripsi, kategori, metadata)
+    - Delete arsip dengan konfirmasi
+    - Form metadata dinamis berdasarkan konfigurasi
+    - Progress bar saat upload
+    - Filter dan pencarian arsip
 
-5. **Service Layer**
-   - Archive CRUD operations
-   - Upload/download files
-   - Metadata management
-   - Activity logging
+5. **Komponen Reusable**
+    - `ArchiveCard` - Kartu arsip
+    - `ArchiveTable` - Tabel arsip dengan aksi
+    - `ArchiveFormModal` - Modal form untuk create/edit
+    - `ArchiveUploadForm` - Form upload dengan drag & drop
+    - `MetadataFormDynamic` - Form metadata dinamis
+    - `AppLayout` - Layout aplikasi
+    - `LoginForm` - Form login
 
-6. **Database & Migrations**
-   - Schema lengkap dengan RLS
-   - Default categories & modules
-   - Indexes untuk performa
+6. **Service Layer**
+    - Archive CRUD operations
+    - Upload/download files
+    - Metadata management
+    - Activity logging
+    - Category management
+
+7. **Database & Migrations**
+    - Schema lengkap dengan RLS
+    - Default categories & modules
+    - Indexes untuk performa
 
 ---
 
@@ -168,21 +181,32 @@ npm run dev
 
 Berikut adalah fitur-fitur yang perlu dikembangkan lebih lanjut:
 
-### 🔨 Halaman Manajemen Arsip (CRUD Lengkap)
+### ✅ Halaman Manajemen Arsip (CRUD Lengkap) - SELESAI
 
-**File yang perlu dibuat:**
-- `src/pages/ArchivesPage.tsx`
-- `src/components/Archive/ArchiveFormModal.tsx`
-- `src/components/Archive/ArchiveUploadForm.tsx`
+**File yang dibuat:**
+- `src/pages/ArchivesPage.tsx` ✅
+- `src/components/Archive/ArchiveFormModal.tsx` ✅
+- `src/components/Archive/ArchiveUploadForm.tsx` ✅
 
-**Fitur:**
-- List semua arsip dengan tabel/grid view
-- Form upload arsip baru + metadata dinamis
-- Edit arsip (update title, description, metadata, tags, category)
-- Delete arsip dengan konfirmasi
-- Preview file sebelum upload
-- Progress bar saat upload
-- Drag & drop file dengan Mantine Dropzone
+**Fitur yang diimplementasikan:**
+- ✅ List semua arsip dengan tabel view
+- ✅ Form upload arsip baru dengan drag & drop (2-step: upload file lalu isi detail)
+- ✅ Metadata dinamis berdasarkan konfigurasi
+- ✅ Edit arsip (judul, deskripsi, kategori, metadata)
+- ✅ Delete arsip dengan konfirmasi modal (mengganti window.confirm)
+- ✅ Progress bar saat upload
+- ✅ Filter dan pencarian arsip (by kategori dan teks)
+- ✅ Error handling dan notifications
+- ✅ Activity logging untuk semua operasi CRUD
+- ✅ Routing terintegrasi dengan react-router-dom
+
+**Perbaikan Terbaru:**
+- ✅ Fixed metadataService import dan usage (sekarang menggunakan import terpisah)
+- ✅ Improved create modal flow dengan auto-switch ke tab details setelah file dipilih
+- ✅ Added activity logging untuk semua operasi CRUD (create, update, delete)
+- ✅ Replaced window.confirm dengan Mantine Modal untuk konfirmasi delete
+- ✅ Fixed filter kategori dengan value handling yang lebih baik
+- ✅ Fixed TypeScript errors dan type assertions
 
 **Contoh implementasi upload:**
 
@@ -219,33 +243,35 @@ const handleUpload = async (files: File[]) => {
 };
 ```
 
-### 🔨 Halaman Manajemen Kategori
+### ✅ Halaman Manajemen Kategori - SELESAI
 
 **File:** `src/pages/CategoriesPage.tsx`
 
 **Fitur:**
-- CRUD categories
-- Color picker untuk warna kategori
-- Icon picker untuk ikon kategori
-- Hierarchical categories (parent-child)
+- CRUD kategori dengan tabel dan pencarian
+- Color picker untuk memilih warna kategori
+- Icon picker dengan pilihan Tabler Icons
+- Dukungan hierarki kategori (parent-child)
+- Notifikasi sukses/error & refresh data instan
 
-### 🔨 Halaman Manajemen Tags
+### ✅ Halaman Manajemen Tags - SELESAI
 
 **File:** `src/pages/TagsPage.tsx`
 
 **Fitur:**
-- CRUD tags
-- Bulk assign tags ke arsip
-- Color picker untuk tags
+- CRUD tag dengan pencarian & refresh cepat
+- Color picker untuk kontrol warna label
+- Tabel overview dengan aksi edit/hapus
+- Notifikasi feedback untuk setiap operasi
 
-### 🔨 Halaman Activity Log
+### ✅ Halaman Activity Log - SELESAI
 
 **File:** `src/pages/ActivityLogPage.tsx`
 
 **Fitur:**
-- Tampilkan semua activity logs
-- Filter berdasarkan action, user, entity
-- Export logs ke CSV/Excel
+- Daftar log dengan waktu, pengguna, action, entity, dan detail JSON
+- Filter action, user, entity type, rentang tanggal, serta limit hasil
+- Tombol refresh cepat + export CSV instan
 
 ### 🔨 Search & Filtering Advanced
 
