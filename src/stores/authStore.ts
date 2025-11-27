@@ -42,14 +42,22 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   initialize: async () => {
-    set({ loading: true });
-    const { data: { session } } = await supabase.auth.getSession();
-    set({ user: session?.user ?? null, loading: false });
+    try {
+      set({ loading: true });
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('Error getting session:', error);
+        set({ user: null, loading: false });
+        return;
+      }
+      set({ user: session?.user ?? null, loading: false });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
+      supabase.auth.onAuthStateChange((_event, session) => {
         set({ user: session?.user ?? null });
-      })();
-    });
+      });
+    } catch (error) {
+      console.error('Error initializing auth:', error);
+      set({ user: null, loading: false });
+    }
   },
 }));

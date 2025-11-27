@@ -8,6 +8,173 @@ Sistem Manajemen Arsip adalah aplikasi berbasis web modular yang dibangun dengan
 - **Backend**: Supabase (Database, Auth, Storage)
 - **State Management**: Zustand
 
+## Cara Penggunaan
+
+### Akses Aplikasi
+
+1. **Login ke Sistem**
+   - Buka browser dan akses URL aplikasi
+   - Masukkan email dan password yang telah terdaftar
+   - Klik tombol "Masuk"
+
+2. **Dashboard**
+   - Setelah login, Anda akan diarahkan ke halaman Dashboard
+   - Dashboard menampilkan statistik overview sistem arsip
+   - Navigasi utama tersedia di sidebar kiri
+
+### Fitur Utama
+
+#### 1. Manajemen Arsip
+
+**Melihat Daftar Arsip:**
+- Klik menu "Arsip" di sidebar
+- Tabel akan menampilkan semua arsip yang tersedia
+- Gunakan kolom pencarian untuk mencari arsip berdasarkan judul atau deskripsi
+- Filter berdasarkan kategori menggunakan dropdown filter
+
+**Menambah Arsip Baru:**
+- Klik tombol "Tambah Arsip" di halaman Arsip
+- Langkah 1: Upload file dengan drag & drop atau klik untuk memilih file
+- Langkah 2: Isi detail arsip (judul, deskripsi, kategori, metadata)
+- Klik "Simpan" untuk menyimpan arsip
+
+**Mengedit Arsip:**
+- Pada tabel arsip, klik ikon edit (pensil) di kolom Aksi
+- Ubah informasi yang diperlukan
+- Klik "Simpan" untuk menyimpan perubahan
+
+**Menghapus Arsip:**
+- Klik ikon hapus (sampah) di kolom Aksi
+- Konfirmasi penghapusan pada dialog yang muncul
+- Arsip akan dihapus secara permanen
+
+**Download Arsip:**
+- Klik ikon download di kolom Aksi
+- File akan diunduh ke perangkat Anda
+
+#### 2. Manajemen Kategori
+
+**Melihat Kategori:**
+- Klik menu "Kategori" di sidebar
+- Tabel menampilkan semua kategori dengan ikon dan warna
+
+**Menambah Kategori:**
+- Klik tombol "Tambah Kategori"
+- Isi nama kategori
+- Pilih ikon dan warna
+- Pilih kategori induk jika diperlukan (untuk hierarki)
+- Klik "Simpan"
+
+**Mengedit/Menghapus Kategori:**
+- Gunakan ikon edit/hapus di tabel kategori
+
+#### 3. Manajemen Tag
+
+**Melihat Tag:**
+- Klik menu "Tag" di sidebar
+- Tabel menampilkan semua tag dengan warna
+
+**Menambah Tag:**
+- Klik tombol "Tambah Tag"
+- Isi nama tag
+- Pilih warna
+- Klik "Simpan"
+
+**Mengedit/Menghapus Tag:**
+- Gunakan ikon edit/hapus di tabel tag
+
+#### 4. Log Aktivitas
+
+**Melihat Log Aktivitas:**
+- Klik menu "Log Aktivitas" di sidebar
+- Filter berdasarkan:
+  - Tipe aksi (CREATE, UPDATE, DELETE)
+  - Pengguna
+  - Tipe entitas (archives, categories, tags)
+  - Rentang tanggal
+- Klik "Cari" untuk menerapkan filter
+- Klik "Refresh" untuk memperbarui data
+- Klik "Export CSV" untuk mengunduh log
+
+#### 5. Tabel Kustom
+
+**Melihat Tabel Kustom:**
+- Klik menu "Tabel Kustom" di sidebar
+- Tabel menampilkan daftar semua tabel kustom yang telah dibuat
+
+**Membuat Tabel Baru:**
+- Klik tombol "Buat Tabel Baru"
+- Isi nama tabel dan deskripsi (opsional)
+- Tambah kolom dengan tipe data: Teks, Angka, Tanggal, Ya/Tidak, atau Pilihan
+- Set kolom sebagai wajib diisi jika diperlukan
+- Klik "Buat Tabel"
+
+**Mengedit Struktur Tabel:**
+- Pada tabel daftar, klik ikon edit di kolom Aksi
+- Modifikasi kolom yang ada atau tambah kolom baru
+- Klik "Perbarui"
+
+**Menghapus Tabel:**
+- Klik ikon hapus di kolom Aksi
+- Konfirmasi penghapusan (semua data akan hilang)
+
+**Mengelola Data Tabel:**
+- Klik ikon database di kolom Aksi untuk melihat data
+- Tambah data baru dengan tombol "Tambah Data"
+- Edit atau hapus data dengan ikon di tabel
+- Data akan divalidasi berdasarkan tipe kolom dan aturan wajib
+
+#### 6. Arsip Publik
+
+**Mengakses Arsip Publik:**
+- Tidak memerlukan login
+- Akses melalui URL: `/public-archive`
+- Fitur pencarian dan filter sama seperti halaman Arsip utama
+- Hanya dapat melihat dan mengunduh arsip (tidak dapat edit/hapus)
+
+### Tips Penggunaan
+
+1. **Upload File:**
+   - Format file yang didukung: PDF, DOC, DOCX, gambar
+   - Ukuran maksimal file sesuai konfigurasi sistem
+   - Gunakan drag & drop untuk upload cepat
+
+2. **Metadata Dinamis:**
+   - Setiap arsip dapat memiliki metadata tambahan sesuai konfigurasi
+   - Isi semua field yang wajib (ditandai bintang *)
+   - Metadata membantu dalam pencarian dan pengorganisasian arsip
+
+3. **Pencarian dan Filter:**
+   - Gunakan pencarian teks untuk mencari di judul, deskripsi, dan metadata
+   - Kombinasikan filter kategori dan tag untuk hasil lebih spesifik
+   - Pada halaman log, gunakan filter tanggal untuk melihat aktivitas periode tertentu
+
+4. **Keamanan:**
+   - Selalu logout setelah selesai menggunakan aplikasi
+   - Jangan bagikan kredensial login dengan orang lain
+   - Sistem secara otomatis logout jika tidak aktif dalam waktu tertentu
+
+### Troubleshooting
+
+**Tidak dapat login:**
+- Pastikan email dan password benar
+- Periksa koneksi internet
+- Hubungi administrator jika lupa password
+
+**Upload file gagal:**
+- Periksa ukuran file tidak melebihi batas
+- Pastikan format file didukung
+- Coba refresh halaman dan upload ulang
+
+**Data tidak muncul:**
+- Klik tombol "Refresh" di halaman terkait
+- Periksa koneksi internet
+- Logout dan login ulang jika diperlukan
+
+**Error lainnya:**
+- Catat pesan error yang muncul
+- Laporkan ke administrator sistem dengan detail error
+
 ## Arsitektur Modular
 
 Sistem ini dirancang dengan arsitektur modular agar dapat:
@@ -272,6 +439,30 @@ const handleUpload = async (files: File[]) => {
 - Daftar log dengan waktu, pengguna, action, entity, dan detail JSON
 - Filter action, user, entity type, rentang tanggal, serta limit hasil
 - Tombol refresh cepat + export CSV instan
+
+### ✅ Fitur Tabel Kustom - SELESAI
+
+**File yang dibuat:**
+- `src/services/customTableService.ts` ✅
+- `src/pages/CustomTablesPage.tsx` ✅
+- `src/components/CustomTables/TableDefinitionModal.tsx` ✅
+- `src/components/CustomTables/TableDataTable.tsx` ✅
+- `src/components/CustomTables/TableDataModal.tsx` ✅
+
+**Fitur yang diimplementasikan:**
+- ✅ Membuat tabel kustom tanpa mengubah struktur database
+- ✅ Mendefinisikan kolom dengan berbagai tipe data (text, number, date, boolean, select)
+- ✅ CRUD data tabel dengan validasi tipe data
+- ✅ Interface web lengkap untuk manajemen tabel dan data
+- ✅ Data disimpan di tabel `settings` sebagai JSON
+- ✅ Navigasi terintegrasi dengan menu "Tabel Kustom"
+- ✅ Error handling dan notifications
+
+**Cara kerja:**
+- Struktur tabel disimpan di `settings.key = 'custom_tables'`
+- Data tabel disimpan di `settings.key = 'custom_table_data_{tableId}'`
+- Semua operasi menggunakan existing RLS policies
+- Tidak memerlukan perubahan schema database
 
 ### 🔨 Search & Filtering Advanced
 

@@ -1,6 +1,6 @@
 import { AppShell, Burger, Group, Text, Button, useMantineColorScheme, ActionIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconMoon, IconSun, IconLogout, IconHome, IconArchive, IconFolder, IconTags, IconActivity, IconWorld } from '@tabler/icons-react';
+import { IconMoon, IconSun, IconLogout, IconHome, IconArchive, IconFolder, IconTags, IconActivity, IconWorld, IconTable } from '@tabler/icons-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useConfigStore } from '../../stores/configStore';
 import { Navigation } from './Navigation';
@@ -11,10 +11,11 @@ interface AppLayoutProps {
 }
 
 const navLinks = [
-  { icon: IconHome, label: 'Dashboard', path: '/' },
+  { icon: IconHome, label: 'Dashboard', path: '/dashboard' },
   { icon: IconArchive, label: 'Arsip', path: '/archives' },
   { icon: IconFolder, label: 'Kategori', path: '/categories' },
   { icon: IconTags, label: 'Tags', path: '/tags' },
+  { icon: IconTable, label: 'Struktur Arsip Dinamis', path: '/custom-tables' },
   { icon: IconActivity, label: 'Activity Log', path: '/activity' },
   { icon: IconWorld, label: 'Arsip Publik', path: '/public' },
 ];
@@ -37,12 +38,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   const activePath =
     navLinks
       .filter((link) => {
-        if (link.path === '/') {
-          return location.pathname === '/';
+        if (link.path === '/dashboard') {
+          return location.pathname === '/dashboard';
         }
         return location.pathname.startsWith(link.path);
       })
-      .sort((a, b) => b.path.length - a.path.length)[0]?.path ?? '/';
+      .sort((a, b) => b.path.length - a.path.length)[0]?.path ?? '/dashboard';
 
   return (
     <AppShell

@@ -22,11 +22,13 @@ import { archiveService, metadataService } from '../services/archiveService';
 import { categoryService } from '../services/categoryService';
 import { activityLogService } from '../services/activityLogService';
 import { useAuthStore } from '../stores/authStore';
+import { useConfigStore } from '../stores/configStore';
 import type { Archive, Category } from '../types';
 import { notifications } from '@mantine/notifications';
 
 export function ArchivesPage() {
   const { user } = useAuthStore();
+  const { config } = useConfigStore();
   const [archives, setArchives] = useState<Archive[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,9 +84,21 @@ export function ArchivesPage() {
     }
   };
 
-  const handleEdit = (archive: Archive) => {
-    setEditingArchive(archive);
-    setEditModalOpened(true);
+  const handleEdit = async (archive: Archive) => {
+    try {
+      // Fetch full archive details with metadata
+      const fullArchive = await archiveService.getById(archive.id);
+      if (fullArchive) {
+        setEditingArchive(fullArchive);
+        setEditModalOpened(true);
+      }
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Gagal memuat detail arsip',
+        color: 'red',
+      });
+    }
   };
 
   const handleDelete = (archive: Archive) => {
@@ -139,18 +153,32 @@ export function ArchivesPage() {
   };
 
   const handleCreateArchive = async (formData: ArchiveFormData) => {
-    if (!selectedFile || !user) return;
+    if (!selectedFile || !user) {
+      console.error('Missing file or user:', { hasFile: !!selectedFile, hasUser: !!user });
+      return;
+    }
 
+    console.log('User authenticated:', user.id, user.email);
     setUploading(true);
     setUploadProgress(0);
 
     try {
+      console.log('Starting archive creation process...');
+      console.log('Selected file:', selectedFile.name, 'Size:', selectedFile.size);
+
       // Upload file
       const filePath = `${Date.now()}-${selectedFile.name}`;
+      console.log('Uploading file to path:', filePath);
+
+      // Bucket will be created automatically if it doesn't exist
+      console.log('Ensuring bucket exists before upload...');
+
       await archiveService.uploadFile(selectedFile, filePath);
       setUploadProgress(50);
+      console.log('File uploaded successfully');
 
       // Create archive
+      console.log('Creating archive record...');
       const archive = await archiveService.create({
         title: formData.title,
         description: formData.description,
@@ -161,26 +189,41 @@ export function ArchivesPage() {
         file_type: selectedFile.type,
         is_public: formData.is_public,
         uploaded_by: user.id,
-      }) as Archive;
+      }) as any;
+      console.log('Archive record created:', archive);
 
       // Create metadata
-      if (Object.keys(formData.metadata).length > 0) {
-        const metadata = Object.entries(formData.metadata).map(([field, value]) => ({
-          archive_id: archive.id,
-          field_name: field,
-          field_value: value,
-          field_type: 'text', // TODO: Get from schema
-        }));
-        await metadataService.create(metadata);
+      if (formData.metadata && Object.keys(formData.metadata).length > 0) {
+        console.log('Creating metadata...');
+        const metadataFields = Object.entries(formData.metadata)
+          .filter(([_, value]) => value && value.trim() !== '') // Only include non-empty values
+          .map(([field, value]) => {
+            // Find field type from schema
+            const schemaField = config.metadataSchema?.find(s => s.field === field);
+            return {
+              archive_id: archive.id,
+              field_name: field,
+              field_value: value,
+              field_type: schemaField?.type || 'text',
+            };
+          });
+        
+        if (metadataFields.length > 0) {
+          console.log('Metadata to create:', metadataFields);
+          await metadataService.create(metadataFields);
+          console.log('Metadata created successfully');
+        }
       }
 
       // Log activity
+      console.log('Logging activity...');
       await activityLogService.create({
         action: 'create',
         entity_type: 'archive',
         entity_id: archive.id,
         details: { title: archive.title },
       });
+      console.log('Activity logged successfully');
 
       setUploadProgress(100);
 
@@ -198,11 +241,16 @@ export function ArchivesPage() {
       setSelectedFile(null);
       setActiveTab('upload');
     } catch (error) {
+      console.error('Error creating archive:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       notifications.show({
         title: 'Error',
-        message: 'Gagal menambahkan arsip',
+        message: `Gagal menambahkan arsip: ${errorMessage}`,
         color: 'red',
       });
+      
+      // Re-throw to let form handle it if needed
+      throw error;
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -220,14 +268,22 @@ export function ArchivesPage() {
         is_public: formData.is_public,
       });
 
-      // Update metadata
-      if (Object.keys(formData.metadata).length > 0) {
-        await metadataService.update(editingArchive.id, Object.entries(formData.metadata).map(([field, value]) => ({
-          field_name: field,
-          field_value: value,
-          field_type: 'text', // TODO: Get from schema
-        })));
-      }
+      // Update metadata - always update, even if empty
+      const metadataFields = formData.metadata 
+        ? Object.entries(formData.metadata)
+            .filter(([_, value]) => value && value.trim() !== '') // Only include non-empty values
+            .map(([field, value]) => {
+              // Find field type from schema
+              const schemaField = config.metadataSchema?.find(s => s.field === field);
+              return {
+                field_name: field,
+                field_value: value,
+                field_type: schemaField?.type || 'text',
+              };
+            })
+        : [];
+      
+      await metadataService.update(editingArchive.id, metadataFields);
 
       // Log activity
       await activityLogService.create({
@@ -251,9 +307,10 @@ export function ArchivesPage() {
     } catch (error) {
       notifications.show({
         title: 'Error',
-        message: 'Gagal memperbarui arsip',
+        message: error instanceof Error ? error.message : 'Gagal memperbarui arsip',
         color: 'red',
       });
+      throw error; // Re-throw so form modal can handle it
     }
   };
 
@@ -300,11 +357,10 @@ export function ArchivesPage() {
           <Select
             placeholder="Semua Kategori"
             data={[
-              { value: 'all', label: 'Semua Kategori' },
               ...categories.map((cat) => ({ value: cat.id, label: cat.name })),
             ]}
-            value={selectedCategory || 'all'}
-            onChange={(value) => setSelectedCategory(value === 'all' ? null : value)}
+            value={selectedCategory}
+            onChange={(value) => setSelectedCategory(value)}
             clearable
           />
         </Group>
@@ -352,13 +408,19 @@ export function ArchivesPage() {
             <Tabs.Panel value="details" pt="md">
               {selectedFile ? (
                 <ArchiveFormModal
-                  opened={false} // Don't show as modal
+                  opened={true} // Keep opened true so form initializes
                   onClose={() => {
+                    // This will be handled by the modal's onClose
                     setCreateModalOpened(false);
                     setSelectedFile(null);
                     setActiveTab('upload');
                   }}
-                  onSave={handleCreateArchive}
+                  onSave={async (formData) => {
+                    await handleCreateArchive(formData);
+                    // Reset after successful save
+                    setSelectedFile(null);
+                    setActiveTab('upload');
+                  }}
                   renderAsModal={false}
                 />
               ) : (
@@ -373,7 +435,10 @@ export function ArchivesPage() {
         {/* Edit Modal */}
         <ArchiveFormModal
           opened={editModalOpened}
-          onClose={() => setEditModalOpened(false)}
+          onClose={() => {
+            setEditModalOpened(false);
+            setEditingArchive(null);
+          }}
           archive={editingArchive}
           onSave={handleUpdateArchive}
         />

@@ -79,11 +79,47 @@
   - `details` (jsonb) - Additional details
   - `created_at` (timestamptz)
 
+  ### `custom_tables`
+  - `id` (uuid, primary key)
+  - `name` (text, unique) - Table name
+  - `description` (text) - Table description
+  - `created_at` (timestamptz)
+  - `updated_at` (timestamptz)
+
+  ### `custom_table_columns`
+  - `id` (uuid, primary key)
+  - `table_id` (uuid) - Foreign key to custom_tables
+  - `name` (text) - Column name
+  - `type` (text) - Column type (text, number, date, boolean, select)
+  - `required` (boolean) - Whether column is required
+  - `options` (jsonb) - Options for select type columns
+  - `column_order` (integer) - Display order
+  - `created_at` (timestamptz)
+  - `updated_at` (timestamptz)
+
+  ### `custom_table_data`
+  - `id` (uuid, primary key)
+  - `table_id` (uuid) - Foreign key to custom_tables
+  - `data` (jsonb) - Dynamic row data
+  - `created_by` (uuid) - Foreign key to auth.users (tracking creator)
+  - `created_at` (timestamptz)
+  - `updated_at` (timestamptz)
+
+  ## Validation & Constraints
+  - Database triggers validate data before insert/update:
+    - Required fields must be filled
+    - Data types must match column definitions (number, boolean, date, select, text)
+    - Select values must be from defined options
+    - Date values must be valid date format
+  - Automatic `updated_at` timestamp updates
+  - Cascade delete: deleting a table removes all columns and data
+
   ## Security
   - Enable RLS on all tables
   - Archives: Users can read own archives, public archives visible to all
   - Settings/Modules: Only authenticated users can read
   - Activity logs: Users can only read own logs
+  - Custom tables: Only authenticated users can manage
 */
 
 -- Settings table
@@ -102,6 +138,11 @@ CREATE POLICY "Authenticated users can read settings"
   ON settings FOR SELECT
   TO authenticated
   USING (true);
+
+CREATE POLICY "Authenticated users can insert settings"
+  ON settings FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
 
 CREATE POLICY "Authenticated users can update settings"
   ON settings FOR UPDATE
@@ -339,6 +380,110 @@ CREATE POLICY "System can insert activity logs"
   TO authenticated
   WITH CHECK (true);
 
+-- Custom tables feature
+-- Table for custom table definitions
+CREATE TABLE IF NOT EXISTS custom_tables (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  description text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(name)
+);
+
+ALTER TABLE custom_tables ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read custom tables"
+  ON custom_tables FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Authenticated users can insert custom tables"
+  ON custom_tables FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY "Authenticated users can update custom tables"
+  ON custom_tables FOR UPDATE
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+CREATE POLICY "Authenticated users can delete custom tables"
+  ON custom_tables FOR DELETE
+  TO authenticated
+  USING (true);
+
+-- Table for custom table columns
+CREATE TABLE IF NOT EXISTS custom_table_columns (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  table_id uuid REFERENCES custom_tables(id) ON DELETE CASCADE NOT NULL,
+  name text NOT NULL,
+  type text NOT NULL DEFAULT 'text',
+  required boolean DEFAULT false,
+  options jsonb DEFAULT '[]'::jsonb,
+  column_order integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(table_id, name)
+);
+
+ALTER TABLE custom_table_columns ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read custom table columns"
+  ON custom_table_columns FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Authenticated users can insert custom table columns"
+  ON custom_table_columns FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY "Authenticated users can update custom table columns"
+  ON custom_table_columns FOR UPDATE
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+CREATE POLICY "Authenticated users can delete custom table columns"
+  ON custom_table_columns FOR DELETE
+  TO authenticated
+  USING (true);
+
+-- Table for custom table data rows
+CREATE TABLE IF NOT EXISTS custom_table_data (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  table_id uuid REFERENCES custom_tables(id) ON DELETE CASCADE NOT NULL,
+  data jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE custom_table_data ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read custom table data"
+  ON custom_table_data FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Authenticated users can insert custom table data"
+  ON custom_table_data FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY "Authenticated users can update custom table data"
+  ON custom_table_data FOR UPDATE
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+CREATE POLICY "Authenticated users can delete custom table data"
+  ON custom_table_data FOR DELETE
+  TO authenticated
+  USING (true);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_archives_category ON archives(category_id);
 CREATE INDEX IF NOT EXISTS idx_archives_uploaded_by ON archives(uploaded_by);
@@ -349,6 +494,151 @@ CREATE INDEX IF NOT EXISTS idx_archive_tags_archive_id ON archive_tags(archive_i
 CREATE INDEX IF NOT EXISTS idx_archive_tags_tag_id ON archive_tags(tag_id);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON activity_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_custom_table_columns_table_id ON custom_table_columns(table_id);
+CREATE INDEX IF NOT EXISTS idx_custom_table_columns_order ON custom_table_columns(table_id, column_order);
+CREATE INDEX IF NOT EXISTS idx_custom_table_data_table_id ON custom_table_data(table_id);
+CREATE INDEX IF NOT EXISTS idx_custom_table_data_created_at ON custom_table_data(table_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_custom_table_data_created_by ON custom_table_data(created_by);
+
+-- Function to validate custom table data
+CREATE OR REPLACE FUNCTION validate_custom_table_data()
+RETURNS TRIGGER AS $$
+DECLARE
+  col_record RECORD;
+  col_value jsonb;
+  col_type text;
+  is_valid boolean := true;
+  error_message text := '';
+BEGIN
+  -- Get all columns for this table
+  FOR col_record IN
+    SELECT * FROM custom_table_columns
+    WHERE table_id = NEW.table_id
+    ORDER BY column_order
+  LOOP
+    col_value := NEW.data->col_record.name;
+    col_type := col_record.type;
+    
+    -- Check required fields
+    IF col_record.required AND (col_value IS NULL OR col_value = 'null'::jsonb) THEN
+      is_valid := false;
+      error_message := error_message || 'Kolom "' || col_record.name || '" wajib diisi. ';
+    END IF;
+    
+    -- Validate data type if value exists
+    IF col_value IS NOT NULL AND col_value != 'null'::jsonb THEN
+      CASE col_type
+        WHEN 'number' THEN
+          -- Check if value is a valid number
+          IF jsonb_typeof(col_value) != 'number' THEN
+            is_valid := false;
+            error_message := error_message || 'Kolom "' || col_record.name || '" harus berupa angka. ';
+          END IF;
+        WHEN 'boolean' THEN
+          -- Check if value is a valid boolean
+          IF jsonb_typeof(col_value) != 'boolean' THEN
+            is_valid := false;
+            error_message := error_message || 'Kolom "' || col_record.name || '" harus berupa ya/tidak. ';
+          END IF;
+        WHEN 'date' THEN
+          -- Check if value is a valid date string
+          IF jsonb_typeof(col_value) != 'string' THEN
+            is_valid := false;
+            error_message := error_message || 'Kolom "' || col_record.name || '" harus berupa tanggal (string). ';
+          ELSE
+            BEGIN
+              PERFORM (col_value #>> '{}')::date;
+            EXCEPTION WHEN OTHERS THEN
+              is_valid := false;
+              error_message := error_message || 'Kolom "' || col_record.name || '" harus berupa tanggal yang valid (format: YYYY-MM-DD). ';
+            END;
+          END IF;
+        WHEN 'select' THEN
+          -- Check if value is in options
+          IF col_record.options IS NOT NULL AND 
+             jsonb_typeof(col_record.options) = 'array' THEN
+            IF jsonb_typeof(col_value) = 'string' AND
+               NOT EXISTS (
+                 SELECT 1 FROM jsonb_array_elements_text(col_record.options) AS opt
+                 WHERE opt = col_value::text
+               ) THEN
+              is_valid := false;
+              error_message := error_message || 'Kolom "' || col_record.name || '" harus salah satu dari: ' || 
+                              array_to_string(ARRAY(SELECT jsonb_array_elements_text(col_record.options)), ', ') || '. ';
+            END IF;
+          END IF;
+        -- 'text' type accepts any string, no validation needed
+      END CASE;
+    END IF;
+  END LOOP;
+  
+  -- Check for extra fields that don't exist in column definitions
+  FOR col_record IN
+    SELECT key as field_name
+    FROM jsonb_each(NEW.data)
+    WHERE key NOT IN (
+      SELECT name FROM custom_table_columns WHERE table_id = NEW.table_id
+    )
+  LOOP
+    -- Allow extra fields but log warning (or remove them)
+    -- For strict mode, uncomment below:
+    -- is_valid := false;
+    -- error_message := error_message || 'Kolom "' || col_record.field_name || '" tidak terdefinisi dalam tabel. ';
+  END LOOP;
+  
+  IF NOT is_valid THEN
+    RAISE EXCEPTION 'Validasi gagal: %', error_message;
+  END IF;
+  
+  -- Set created_by if not set
+  IF NEW.created_by IS NULL THEN
+    NEW.created_by := auth.uid();
+  END IF;
+  
+  -- Update updated_at
+  NEW.updated_at := now();
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for validation
+CREATE TRIGGER validate_custom_table_data_trigger
+  BEFORE INSERT OR UPDATE ON custom_table_data
+  FOR EACH ROW
+  EXECUTE FUNCTION validate_custom_table_data();
+
+-- Function to update updated_at on custom_tables
+CREATE OR REPLACE FUNCTION update_custom_table_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to update updated_at on custom_tables
+CREATE TRIGGER update_custom_tables_updated_at
+  BEFORE UPDATE ON custom_tables
+  FOR EACH ROW
+  EXECUTE FUNCTION update_custom_table_updated_at();
+
+-- Function to update updated_at on custom_table_columns
+CREATE OR REPLACE FUNCTION update_custom_table_columns_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at := now();
+  -- Also update parent table's updated_at
+  UPDATE custom_tables SET updated_at = now() WHERE id = NEW.table_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to update updated_at on custom_table_columns
+CREATE TRIGGER update_custom_table_columns_updated_at
+  BEFORE UPDATE ON custom_table_columns
+  FOR EACH ROW
+  EXECUTE FUNCTION update_custom_table_columns_updated_at();
 
 -- Insert default settings
 INSERT INTO settings (key, value, description) VALUES

@@ -4,12 +4,14 @@ import { Notifications } from '@mantine/notifications';
 import { useAuthStore } from './stores/authStore';
 import { AppLayout } from './components/Layout/AppLayout';
 import { LoginPage } from './pages/LoginPage';
+import { HomePage } from './pages/HomePage';
 import { DashboardPage } from './pages/DashboardPage';
 import { PublicArchivePage } from './pages/PublicArchivePage';
 import { ArchivesPage } from './pages/ArchivesPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { TagsPage } from './pages/TagsPage';
 import { ActivityLogPage } from './pages/ActivityLogPage';
+import { CustomTablesPage } from './pages/CustomTablesPage';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
 import '@mantine/core/styles.css';
@@ -47,24 +49,26 @@ export default App;
 function AppRoutes({ user }: { user: User | null }) {
   return (
     <Routes>
+      <Route path="/" element={<HomePage />} />
       <Route path="/public-archive" element={<PublicArchivePage />} />
       {user ? (
         <>
           <Route element={<PrivateLayout />}>
-            <Route path="/" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/archives" element={<ArchivesPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/tags" element={<TagsPage />} />
             <Route path="/activity" element={<ActivityLogPage />} />
+            <Route path="/custom-tables" element={<CustomTablesPage />} />
             <Route path="/public" element={<PublicArchivePage />} />
           </Route>
-          <Route path="/login" element={<Navigate to="/" replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </>
       ) : (
         <>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </>
       )}
     </Routes>

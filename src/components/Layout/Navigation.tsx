@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 
 interface NavigationLink {
-  icon: ComponentType<{ size?: number }>;
+  icon: ComponentType<any>;
   label: string;
   path: string;
 }

@@ -10,32 +10,33 @@ interface MetadataFormDynamicProps {
 
 export function MetadataFormDynamic({ schema, values, onChange }: MetadataFormDynamicProps) {
   const renderField = (field: MetadataField) => {
-    const commonProps = {
+    const baseProps = {
       key: field.field,
       label: field.label,
       required: field.required,
-      value: values[field.field] || '',
-      onChange: (value: string | Date | number | null) => {
-        if (value instanceof Date) {
-          onChange(field.field, value.toISOString());
-        } else {
-          onChange(field.field, String(value || ''));
-        }
-      },
     };
 
     switch (field.type) {
       case 'textarea':
-        return <Textarea {...commonProps} minRows={3} />;
+        return (
+          <Textarea
+            {...baseProps}
+            value={values[field.field] || ''}
+            onChange={(e) => onChange(field.field, e.currentTarget.value)}
+            minRows={3}
+          />
+        );
 
       case 'date':
         return (
           <DateInput
-            {...commonProps}
+            {...baseProps}
             value={values[field.field] ? new Date(values[field.field]) : null}
             onChange={(value) => {
               if (value) {
                 onChange(field.field, value.toISOString());
+              } else {
+                onChange(field.field, '');
               }
             }}
           />
@@ -44,23 +45,31 @@ export function MetadataFormDynamic({ schema, values, onChange }: MetadataFormDy
       case 'number':
         return (
           <NumberInput
-            {...commonProps}
+            {...baseProps}
             value={values[field.field] ? Number(values[field.field]) : undefined}
-            onChange={(value) => onChange(field.field, String(value || ''))}
+            onChange={(value) => onChange(field.field, value !== null && value !== undefined ? String(value) : '')}
           />
         );
 
       case 'select':
         return (
           <Select
-            {...commonProps}
+            {...baseProps}
+            value={values[field.field] || ''}
             data={field.options || []}
             onChange={(value) => onChange(field.field, value || '')}
+            clearable
           />
         );
 
       default:
-        return <TextInput {...commonProps} />;
+        return (
+          <TextInput
+            {...baseProps}
+            value={values[field.field] || ''}
+            onChange={(e) => onChange(field.field, e.currentTarget.value)}
+          />
+        );
     }
   };
 
