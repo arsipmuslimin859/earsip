@@ -13,6 +13,7 @@ import {
   Text,
   Modal,
   Tabs,
+  Pagination,
 } from '@mantine/core';
 import { IconSearch, IconPlus } from '@tabler/icons-react';
 import { ArchiveTable } from '../components/Archive/ArchiveTable';
@@ -34,6 +35,10 @@ export function ArchivesPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 20;
 
   // Modal states
   const [createModalOpened, setCreateModalOpened] = useState(false);
@@ -50,15 +55,24 @@ export function ArchivesPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, searchQuery, selectedCategory]);
 
   const loadData = async () => {
     try {
-      const [archivesData, categoriesData] = await Promise.all([
-        archiveService.getAll(),
+      const [archivesResult, categoriesData] = await Promise.all([
+        archiveService.getPaged({
+          page,
+          pageSize,
+          search: searchQuery,
+          categoryId: selectedCategory,
+        }),
         categoryService.getAll(),
       ]);
-      setArchives(archivesData);
+
+      setArchives(archivesResult.data);
+      setTotal(archivesResult.total);
+      setTotalPages(Math.max(1, Math.ceil(archivesResult.total / pageSize)));
       setCategories(categoriesData);
     } catch (error) {
       notifications.show({
@@ -73,6 +87,20 @@ export function ArchivesPage() {
 
   const handleDownload = async (archive: Archive) => {
     try {
+      if (archive.external_url) {
+        window.open(archive.external_url, '_blank', 'noopener');
+        return;
+      }
+
+      if (!archive.file_path) {
+        notifications.show({
+          title: 'Error',
+          message: 'File tidak tersedia untuk arsip ini',
+          color: 'red',
+        });
+        return;
+      }
+
       const url = await archiveService.getFileUrl(archive.file_path);
       window.open(url, '_blank');
     } catch (error) {
@@ -153,81 +181,111 @@ export function ArchivesPage() {
   };
 
   const handleCreateArchive = async (formData: ArchiveFormData) => {
-    if (!selectedFile || !user) {
-      console.error('Missing file or user:', { hasFile: !!selectedFile, hasUser: !!user });
+    if (!user) {
+      notifications.show({
+        title: 'Error',
+        message: 'User tidak ditemukan. Silakan refresh halaman dan coba lagi.',
+        color: 'red',
+      });
       return;
     }
 
-    console.log('User authenticated:', user.id, user.email);
-    setUploading(true);
-    setUploadProgress(0);
+    const useDrive = formData.storageOption === 'drive';
+
+    if (!useDrive && !selectedFile) {
+      notifications.show({
+        title: 'Error',
+        message: 'File atau user tidak ditemukan. Silakan refresh halaman dan coba lagi.',
+        color: 'red',
+      });
+      return;
+    }
+
+    // Validate required fields
+    if (!formData.title || formData.title.trim() === '') {
+      notifications.show({
+        title: 'Validasi',
+        message: 'Judul arsip wajib diisi',
+        color: 'orange',
+      });
+      return;
+    }
+
+    if (useDrive && (!formData.externalLink || formData.externalLink.trim() === '')) {
+      notifications.show({
+        title: 'Validasi',
+        message: 'Link Drive wajib diisi saat memilih opsi penyimpanan Drive',
+        color: 'orange',
+      });
+      return;
+    }
+
+    if (!useDrive) {
+      setUploading(true);
+      setUploadProgress(0);
+    }
 
     try {
-      console.log('Starting archive creation process...');
-      console.log('Selected file:', selectedFile.name, 'Size:', selectedFile.size);
+      let filePath: string | null = null;
+      let fileName = formData.title.trim();
+      let fileSize = 0;
+      let fileType: string | null = null;
 
-      // Upload file
-      const filePath = `${Date.now()}-${selectedFile.name}`;
-      console.log('Uploading file to path:', filePath);
+      if (!useDrive && selectedFile) {
+        filePath = `${Date.now()}-${selectedFile.name}`;
+        await archiveService.uploadFile(selectedFile, filePath);
+        setUploadProgress(50);
+        fileName = selectedFile.name;
+        fileSize = selectedFile.size;
+        fileType = selectedFile.type || null;
+      }
 
-      // Bucket will be created automatically if it doesn't exist
-      console.log('Ensuring bucket exists before upload...');
-
-      await archiveService.uploadFile(selectedFile, filePath);
-      setUploadProgress(50);
-      console.log('File uploaded successfully');
-
-      // Create archive
-      console.log('Creating archive record...');
+      // Create archive record with proper null handling
       const archive = await archiveService.create({
-        title: formData.title,
-        description: formData.description,
-        category_id: formData.category_id || undefined,
+        title: formData.title.trim(),
+        description: formData.description?.trim() || null,
+        category_id: formData.category_id && formData.category_id !== '' ? formData.category_id : null,
         file_path: filePath,
-        file_name: selectedFile.name,
-        file_size: selectedFile.size,
-        file_type: selectedFile.type,
-        is_public: formData.is_public,
+        file_name: fileName,
+        file_size: fileSize,
+        file_type: fileType,
+        external_url: useDrive ? formData.externalLink.trim() : null,
+        is_public: formData.is_public || false,
         uploaded_by: user.id,
-      }) as any;
-      console.log('Archive record created:', archive);
+      }) as Archive;
 
-      // Create metadata
+      // Create metadata if exists
       if (formData.metadata && Object.keys(formData.metadata).length > 0) {
-        console.log('Creating metadata...');
         const metadataFields = Object.entries(formData.metadata)
-          .filter(([_, value]) => value && value.trim() !== '') // Only include non-empty values
+          .filter(([_, value]) => value && value.toString().trim() !== '')
           .map(([field, value]) => {
-            // Find field type from schema
             const schemaField = config.metadataSchema?.find(s => s.field === field);
             return {
               archive_id: archive.id,
               field_name: field,
-              field_value: value,
+              field_value: value.toString().trim(),
               field_type: schemaField?.type || 'text',
             };
           });
         
         if (metadataFields.length > 0) {
-          console.log('Metadata to create:', metadataFields);
           await metadataService.create(metadataFields);
-          console.log('Metadata created successfully');
         }
       }
 
       // Log activity
-      console.log('Logging activity...');
       await activityLogService.create({
         action: 'create',
         entity_type: 'archive',
         entity_id: archive.id,
         details: { title: archive.title },
       });
-      console.log('Activity logged successfully');
 
-      setUploadProgress(100);
+      if (!useDrive) {
+        setUploadProgress(100);
+      }
 
-      // Reload archives
+      // Reload archives to get fresh data with relations
       await loadData();
 
       notifications.show({
@@ -242,15 +300,29 @@ export function ArchivesPage() {
       setActiveTab('upload');
     } catch (error) {
       console.error('Error creating archive:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      let errorMessage = 'Terjadi kesalahan saat menyimpan arsip';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // If it's a bucket error, show it longer and with better formatting
+        if (error.message.includes('Bucket') || error.message.includes('bucket')) {
+          notifications.show({
+            title: '❌ Bucket Tidak Ditemukan',
+            message: errorMessage,
+            color: 'red',
+            autoClose: 10000, // Show longer for bucket errors
+          });
+          return;
+        }
+      }
+      
       notifications.show({
         title: 'Error',
-        message: `Gagal menambahkan arsip: ${errorMessage}`,
+        message: errorMessage,
         color: 'red',
+        autoClose: 5000,
       });
-      
-      // Re-throw to let form handle it if needed
-      throw error;
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -258,26 +330,50 @@ export function ArchivesPage() {
   };
 
   const handleUpdateArchive = async (formData: ArchiveFormData) => {
-    if (!editingArchive) return;
+    if (!editingArchive) {
+      notifications.show({
+        title: 'Error',
+        message: 'Arsip yang akan diedit tidak ditemukan',
+        color: 'red',
+      });
+      return;
+    }
+
+    // Validate required fields
+    if (!formData.title || formData.title.trim() === '') {
+      notifications.show({
+        title: 'Validasi',
+        message: 'Judul arsip wajib diisi',
+        color: 'orange',
+      });
+      return;
+    }
 
     try {
+      const useDrive = formData.storageOption === 'drive';
+      const externalLink = formData.externalLink?.trim() || null;
+
+      // Update archive with proper null handling
       await archiveService.update(editingArchive.id, {
-        title: formData.title,
-        description: formData.description,
-        category_id: formData.category_id || null,
-        is_public: formData.is_public,
+        title: formData.title.trim(),
+        description: formData.description?.trim() || null,
+        category_id: formData.category_id && formData.category_id !== '' ? formData.category_id : null,
+        is_public: formData.is_public || false,
+        external_url: useDrive ? externalLink : null,
+        file_path: useDrive ? null : editingArchive.file_path,
+        file_size: useDrive ? 0 : editingArchive.file_size,
+        file_type: useDrive ? null : editingArchive.file_type,
       });
 
-      // Update metadata - always update, even if empty
+      // Update metadata - always update, even if empty (to clear removed fields)
       const metadataFields = formData.metadata 
         ? Object.entries(formData.metadata)
-            .filter(([_, value]) => value && value.trim() !== '') // Only include non-empty values
+            .filter(([_, value]) => value && value.toString().trim() !== '')
             .map(([field, value]) => {
-              // Find field type from schema
               const schemaField = config.metadataSchema?.find(s => s.field === field);
               return {
                 field_name: field,
-                field_value: value,
+                field_value: value.toString().trim(),
                 field_type: schemaField?.type || 'text',
               };
             })
@@ -293,7 +389,7 @@ export function ArchivesPage() {
         details: { title: formData.title },
       });
 
-      // Reload archives
+      // Reload archives to get fresh data with relations
       await loadData();
 
       notifications.show({
@@ -305,22 +401,16 @@ export function ArchivesPage() {
       setEditModalOpened(false);
       setEditingArchive(null);
     } catch (error) {
+      console.error('Error updating archive:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan saat memperbarui arsip';
       notifications.show({
         title: 'Error',
-        message: error instanceof Error ? error.message : 'Gagal memperbarui arsip',
+        message: errorMessage,
         color: 'red',
+        autoClose: 5000,
       });
-      throw error; // Re-throw so form modal can handle it
     }
   };
-
-  const filteredArchives = archives.filter((archive) => {
-    const matchesSearch =
-      archive.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      archive.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || archive.category_id === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
 
   if (loading) {
     return (
@@ -365,18 +455,28 @@ export function ArchivesPage() {
           />
         </Group>
 
-        {filteredArchives.length === 0 ? (
+        {archives.length === 0 ? (
           <Paper p="xl" ta="center" withBorder>
             <Text c="dimmed">Tidak ada arsip yang ditemukan</Text>
           </Paper>
         ) : (
           <ArchiveTable
-            archives={filteredArchives}
+            archives={archives}
             onEdit={handleEdit}
             onDelete={handleDelete}
             onDownload={handleDownload}
             showActions={true}
           />
+        )}
+
+        {total > pageSize && (
+          <Group justify="space-between" mt="md">
+            <Text size="sm" c="dimmed">
+              Menampilkan {(page - 1) * pageSize + 1} -{' '}
+              {Math.min(page * pageSize, total)} dari {total} arsip
+            </Text>
+            <Pagination value={page} onChange={setPage} total={totalPages} />
+          </Group>
         )}
 
         {/* Create Modal */}
@@ -393,7 +493,7 @@ export function ArchivesPage() {
           <Tabs value={activeTab} onChange={(value: string | null) => setActiveTab(value || 'upload')}>
             <Tabs.List>
               <Tabs.Tab value="upload">Upload File</Tabs.Tab>
-              <Tabs.Tab value="details" disabled={!selectedFile}>Detail Arsip</Tabs.Tab>
+              <Tabs.Tab value="details">Detail Arsip</Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="upload" pt="md">
@@ -421,6 +521,7 @@ export function ArchivesPage() {
                     setSelectedFile(null);
                     setActiveTab('upload');
                   }}
+                  hasUploadedFile={Boolean(selectedFile)}
                   renderAsModal={false}
                 />
               ) : (

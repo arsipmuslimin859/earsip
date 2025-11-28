@@ -81,4 +81,51 @@ export const activityLogService = {
     if (error) throw error;
     return data as ActivityLog[];
   },
+
+  async getPaginated(options: {
+    page: number;
+    pageSize: number;
+    action?: string;
+    userId?: string;
+    entityType?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }) {
+    const { page, pageSize, action, userId, entityType, dateFrom, dateTo } = options;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+      .from('activity_logs')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (action) {
+      query = query.ilike('action', `%${action}%`);
+    }
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    if (entityType) {
+      query = query.ilike('entity_type', `%${entityType}%`);
+    }
+    if (dateFrom) {
+      query = query.gte('created_at', dateFrom);
+    }
+    if (dateTo) {
+      query = query.lte('created_at', dateTo);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+    return {
+      data: data as ActivityLog[],
+      total: count || 0,
+      page,
+      pageSize,
+      totalPages: Math.ceil((count || 0) / pageSize),
+    };
+  },
 };

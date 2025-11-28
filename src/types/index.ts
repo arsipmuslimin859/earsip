@@ -3,10 +3,11 @@ export interface Archive {
   title: string;
   description: string | null;
   category_id: string | null;
-  file_path: string;
+  file_path: string | null;
   file_name: string;
   file_size: number;
   file_type: string | null;
+  external_url: string | null;
   is_public: boolean;
   version: number;
   parent_version_id: string | null;

@@ -3,6 +3,7 @@ import {
   Modal,
   TextInput,
   Textarea,
+  Text,
   Select,
   Checkbox,
   Button,
@@ -10,6 +11,7 @@ import {
   Stack,
   LoadingOverlay,
   Alert,
+  SegmentedControl,
 } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { MetadataFormDynamic } from './MetadataFormDynamic';
@@ -23,6 +25,7 @@ interface ArchiveFormModalProps {
   archive?: Archive | null;
   onSave: (data: ArchiveFormData) => Promise<void>;
   renderAsModal?: boolean;
+  hasUploadedFile?: boolean;
 }
 
 export interface ArchiveFormData {
@@ -30,10 +33,19 @@ export interface ArchiveFormData {
   description: string;
   category_id: string;
   is_public: boolean;
+  storageOption: 'local' | 'drive';
+  externalLink: string;
   metadata: Record<string, string>;
 }
 
-export function ArchiveFormModal({ opened, onClose, archive, onSave, renderAsModal = true }: ArchiveFormModalProps) {
+export function ArchiveFormModal({
+  opened,
+  onClose,
+  archive,
+  onSave,
+  renderAsModal = true,
+  hasUploadedFile = false,
+}: ArchiveFormModalProps) {
   const { config } = useConfigStore();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,6 +55,8 @@ export function ArchiveFormModal({ opened, onClose, archive, onSave, renderAsMod
     description: '',
     category_id: '',
     is_public: false,
+    storageOption: hasUploadedFile ? 'local' : 'drive',
+    externalLink: '',
     metadata: {},
   });
 
@@ -70,6 +84,8 @@ export function ArchiveFormModal({ opened, onClose, archive, onSave, renderAsMod
           description: archive.description || '',
           category_id: archive.category_id || '',
           is_public: archive.is_public || false,
+          storageOption: archive.external_url ? 'drive' : 'local',
+          externalLink: archive.external_url || '',
           metadata: initializedMetadata,
         });
       } else {
@@ -86,6 +102,8 @@ export function ArchiveFormModal({ opened, onClose, archive, onSave, renderAsMod
           description: '',
           category_id: '',
           is_public: false,
+          storageOption: hasUploadedFile ? 'local' : 'drive',
+          externalLink: '',
           metadata: initializedMetadata,
         });
       }
@@ -125,6 +143,16 @@ export function ArchiveFormModal({ opened, onClose, archive, onSave, renderAsMod
         return;
       }
     }
+
+    if (formData.storageOption === 'drive' && !formData.externalLink.trim()) {
+      setError('Link Drive wajib diisi untuk opsi penyimpanan Drive');
+      return;
+    }
+
+    if (formData.storageOption === 'local' && !canUseLocal) {
+      setError('Unggah file terlebih dahulu sebelum menyimpan ke sistem');
+      return;
+    }
     
     setLoading(true);
     try {
@@ -149,6 +177,26 @@ export function ArchiveFormModal({ opened, onClose, archive, onSave, renderAsMod
   };
 
   const isEdit = !!archive;
+  const canUseLocal = isEdit ? Boolean(archive?.file_path) : Boolean(hasUploadedFile);
+  const showLocalWarning = formData.storageOption === 'local' && !canUseLocal;
+
+  useEffect(() => {
+    if (isEdit) {
+      return;
+    }
+
+    setFormData(prev => {
+      if (hasUploadedFile && prev.storageOption === 'drive' && prev.externalLink === '') {
+        return { ...prev, storageOption: 'local' };
+      }
+
+      if (!hasUploadedFile && prev.storageOption === 'local') {
+        return { ...prev, storageOption: 'drive' };
+      }
+
+      return prev;
+    });
+  }, [hasUploadedFile, isEdit]);
 
   const formContent = (
     <>
@@ -196,6 +244,40 @@ export function ArchiveFormModal({ opened, onClose, archive, onSave, renderAsMod
           checked={formData.is_public}
           onChange={(e) => setFormData(prev => ({ ...prev, is_public: e.currentTarget.checked }))}
         />
+
+        <Stack gap="xs">
+          <Text fw={600}>Metode Penyimpanan</Text>
+          <SegmentedControl
+            value={formData.storageOption}
+            onChange={(value) => {
+              setFormData(prev => ({ ...prev, storageOption: value as 'local' | 'drive' }));
+              setError(null);
+            }}
+            data={[
+              { label: 'Upload ke Sistem', value: 'local', disabled: !canUseLocal },
+              { label: 'Link Drive', value: 'drive' },
+            ]}
+          />
+        </Stack>
+
+        {showLocalWarning && (
+          <Alert icon={<IconAlertCircle size={16} />} color="yellow" title="Upload diperlukan">
+            Unggah file terlebih dahulu pada tab Upload File sebelum memilih opsi ini.
+          </Alert>
+        )}
+
+        {formData.storageOption === 'drive' && (
+          <TextInput
+            label="Link Drive"
+            placeholder="https://drive.google.com/..."
+            required
+            value={formData.externalLink}
+            onChange={(e) => {
+              setFormData(prev => ({ ...prev, externalLink: e.target.value }));
+              setError(null);
+            }}
+          />
+        )}
 
         {config.metadataSchema && config.metadataSchema.length > 0 && (
           <MetadataFormDynamic

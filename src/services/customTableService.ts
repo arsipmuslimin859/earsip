@@ -198,6 +198,71 @@ export const customTableService = {
     }));
   },
 
+  async getTableDataPaged(
+    tableId: string,
+    options: { page: number; pageSize: number }
+  ): Promise<{ data: TableRow[]; total: number; totalPages: number }> {
+    const { page, pageSize } = options;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await supabase
+      .from('custom_table_data')
+      .select('*', { count: 'exact' })
+      .eq('table_id', tableId)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    const total = count || 0;
+    const rows =
+      data?.map((row) => ({
+        id: row.id,
+        ...row.data,
+      })) ?? [];
+
+    return {
+      data: rows,
+      total,
+      totalPages: Math.ceil(total / pageSize) || 1,
+    };
+  },
+
+  // Get table data with pagination
+  async getTableDataPaginated(options: {
+    tableId: string;
+    page: number;
+    pageSize: number;
+  }): Promise<{ data: TableRow[]; total: number; page: number; pageSize: number; totalPages: number }> {
+    const { tableId, page, pageSize } = options;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await supabase
+      .from('custom_table_data')
+      .select('*', { count: 'exact' })
+      .eq('table_id', tableId)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    // Transform data to match expected format
+    const transformedData = (data || []).map((row) => ({
+      id: row.id,
+      ...row.data,
+    }));
+
+    return {
+      data: transformedData,
+      total: count || 0,
+      page,
+      pageSize,
+      totalPages: Math.ceil((count || 0) / pageSize),
+    };
+  },
+
   // Add row to table
   async addRow(tableId: string, row: Omit<TableRow, 'id'>): Promise<TableRow> {
     const { id, ...rowData } = row;

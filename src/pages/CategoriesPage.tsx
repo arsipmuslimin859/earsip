@@ -5,6 +5,7 @@ import {
   Button,
   ColorInput,
   Container,
+  Pagination,
   Group,
   Loader,
   Modal,
@@ -75,6 +76,8 @@ export function CategoriesPage() {
   const [saving, setSaving] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formValues, setFormValues] = useState<CategoryFormValues>(defaultFormValues);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
 
   useEffect(() => {
     loadCategories();
@@ -207,6 +210,12 @@ export function CategoriesPage() {
     });
   }, [categories, searchQuery]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredCategories.length / pageSize));
+  const paginatedCategories = filteredCategories.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
+
   const parentOptions = useMemo(
     () =>
       categories
@@ -247,7 +256,10 @@ export function CategoriesPage() {
             <TextInput
               placeholder="Cari kategori..."
               value={searchQuery}
-              onChange={(event) => setSearchQuery(event.currentTarget.value)}
+              onChange={(event) => {
+                setSearchQuery(event.currentTarget.value);
+                setPage(1);
+              }}
             />
             <Button variant="light" onClick={loadCategories}>
               Muat Ulang
@@ -267,7 +279,7 @@ export function CategoriesPage() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {filteredCategories.length === 0 ? (
+              {paginatedCategories.length === 0 ? (
                 <Table.Tr>
                   <Table.Td colSpan={5}>
                     <Text c="dimmed" ta="center">
@@ -276,7 +288,7 @@ export function CategoriesPage() {
                   </Table.Td>
                 </Table.Tr>
               ) : (
-                filteredCategories.map((category) => {
+                paginatedCategories.map((category) => {
                   const IconComponent =
                     iconComponentMap[category.icon] ?? iconComponentMap[defaultFormValues.icon];
                   return (
@@ -361,6 +373,17 @@ export function CategoriesPage() {
             </Table.Tbody>
           </Table>
         </Paper>
+
+        {filteredCategories.length > pageSize && (
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">
+              Menampilkan {(page - 1) * pageSize + 1} -{' '}
+              {Math.min(page * pageSize, filteredCategories.length)} dari{' '}
+              {filteredCategories.length} kategori
+            </Text>
+            <Pagination value={page} onChange={setPage} total={totalPages} />
+          </Group>
+        )}
       </Stack>
 
       <Modal

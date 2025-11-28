@@ -3,6 +3,7 @@ import {
   ActionIcon,
   Badge,
   Button,
+  Pagination,
   ColorInput,
   Container,
   Group,
@@ -38,6 +39,8 @@ export function TagsPage() {
   const [saving, setSaving] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [formValues, setFormValues] = useState<TagFormValues>(defaultFormValues);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
 
   useEffect(() => {
     loadTags();
@@ -150,6 +153,9 @@ export function TagsPage() {
     return tags.filter((tag) => tag.name.toLowerCase().includes(query));
   }, [searchQuery, tags]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredTags.length / pageSize));
+  const paginatedTags = filteredTags.slice((page - 1) * pageSize, page * pageSize);
+
   if (loading) {
     return (
       <Container size="xl" py="xl">
@@ -179,7 +185,10 @@ export function TagsPage() {
             <TextInput
               placeholder="Cari tag..."
               value={searchQuery}
-              onChange={(event) => setSearchQuery(event.currentTarget.value)}
+              onChange={(event) => {
+                setSearchQuery(event.currentTarget.value);
+                setPage(1);
+              }}
             />
             <Button variant="light" onClick={loadTags}>
               Muat Ulang
@@ -198,7 +207,7 @@ export function TagsPage() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {filteredTags.length === 0 ? (
+              {paginatedTags.length === 0 ? (
                 <Table.Tr>
                   <Table.Td colSpan={4}>
                     <Text c="dimmed" ta="center">
@@ -207,7 +216,7 @@ export function TagsPage() {
                   </Table.Td>
                 </Table.Tr>
               ) : (
-                filteredTags.map((tag) => (
+                paginatedTags.map((tag) => (
                   <Table.Tr key={tag.id}>
                     <Table.Td>
                       <Group gap="sm">
@@ -257,6 +266,16 @@ export function TagsPage() {
             </Table.Tbody>
           </Table>
         </Paper>
+
+        {filteredTags.length > pageSize && (
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">
+              Menampilkan {(page - 1) * pageSize + 1} -{' '}
+              {Math.min(page * pageSize, filteredTags.length)} dari {filteredTags.length} tag
+            </Text>
+            <Pagination value={page} onChange={setPage} total={totalPages} />
+          </Group>
+        )}
       </Stack>
 
       <Modal

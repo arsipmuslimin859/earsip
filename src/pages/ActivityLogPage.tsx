@@ -41,23 +41,30 @@ export function ActivityLogPage() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     loadLogs();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const loadLogs = async () => {
     try {
       setLoading(true);
-      const data = await activityLogService.query({
+      const result = await activityLogService.getPaginated({
+        page,
+        pageSize: filters.limit,
         action: filters.action || undefined,
         userId: filters.userId || undefined,
         entityType: filters.entityType || undefined,
         dateFrom: filters.dateRange[0]?.toISOString(),
         dateTo: filters.dateRange[1]?.toISOString(),
-        limit: filters.limit,
       });
-      setLogs(data);
+      setLogs(result.data);
+      setTotal(result.total);
+      setTotalPages(result.totalPages);
     } catch (error) {
       notifications.show({
         title: 'Error',
@@ -179,21 +186,30 @@ export function ActivityLogPage() {
                 onChange={(value) => setFilters((prev) => ({ ...prev, dateRange: value }))}
               />
               <TextInput
-                label="Limit"
+                label="Jumlah per halaman"
                 type="number"
                 min={10}
                 max={500}
                 value={String(filters.limit)}
-                onChange={(event) =>
-                  setFilters((prev) => ({ ...prev, limit: Number(event.currentTarget.value) || defaultFilters.limit }))
-                }
+                onChange={(event) => {
+                  const value = Number(event.currentTarget.value) || defaultFilters.limit;
+                  setFilters((prev) => ({ ...prev, limit: value }));
+                  setPage(1);
+                }}
               />
             </Group>
             <Group justify="flex-end">
               <Button variant="default" onClick={resetFilters}>
                 Reset
               </Button>
-              <Button onClick={loadLogs}>Terapkan Filter</Button>
+              <Button
+                onClick={() => {
+                  setPage(1);
+                  loadLogs();
+                }}
+              >
+                Terapkan Filter
+              </Button>
             </Group>
           </Stack>
         </Paper>
@@ -259,6 +275,16 @@ export function ActivityLogPage() {
             </Table>
           </ScrollArea>
         </Paper>
+
+        {total > filters.limit && (
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">
+              Menampilkan {(page - 1) * filters.limit + 1} -{' '}
+              {Math.min(page * filters.limit, total)} dari {total} log
+            </Text>
+            <Pagination value={page} onChange={setPage} total={totalPages} />
+          </Group>
+        )}
       </Stack>
 
       <datalist id="actions-list">

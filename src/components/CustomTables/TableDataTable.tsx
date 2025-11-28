@@ -9,6 +9,7 @@ import {
   Text,
   ScrollArea,
   Paper,
+  Pagination,
 } from '@mantine/core';
 import { IconPlus, IconEdit, IconTrash } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
@@ -23,6 +24,10 @@ interface TableDataTableProps {
 export function TableDataTable({ table, onDataChange }: TableDataTableProps) {
   const [data, setData] = useState<TableRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 20;
   const [dataModalOpen, setDataModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<TableRow | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -30,8 +35,13 @@ export function TableDataTable({ table, onDataChange }: TableDataTableProps) {
 
   const loadData = async () => {
     try {
-      const tableData = await customTableService.getTableData(table.id);
-      setData(tableData);
+      const result = await customTableService.getTableDataPaged(table.id, {
+        page,
+        pageSize,
+      });
+      setData(result.data);
+      setTotal(result.total);
+      setTotalPages(result.totalPages);
     } catch (error) {
       console.error('Error loading table data:', error);
       notifications.show({
@@ -46,7 +56,8 @@ export function TableDataTable({ table, onDataChange }: TableDataTableProps) {
 
   useEffect(() => {
     loadData();
-  }, [table.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table.id, page]);
 
   const handleAddRow = () => {
     setEditingRow(null);
@@ -165,6 +176,16 @@ export function TableDataTable({ table, onDataChange }: TableDataTableProps) {
           </Table.Tbody>
         </Table>
       </ScrollArea>
+
+      {total > pageSize && (
+        <Group justify="space-between" mt="md">
+          <Text size="sm" c="dimmed">
+            Menampilkan {(page - 1) * pageSize + 1} -{' '}
+            {Math.min(page * pageSize, total)} dari {total} baris
+          </Text>
+          <Pagination value={page} onChange={setPage} total={totalPages} />
+        </Group>
+      )}
 
       {data.length === 0 && !loading && (
         <Paper p="xl" ta="center" mt="md">

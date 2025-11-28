@@ -51,6 +51,20 @@ export function PublicArchivePage() {
 
   const handleDownload = async (archive: Archive) => {
     try {
+      if (archive.external_url) {
+        window.open(archive.external_url, '_blank', 'noopener');
+        return;
+      }
+
+      if (!archive.file_path) {
+        notifications.show({
+          title: 'Error',
+          message: 'File tidak tersedia untuk arsip ini',
+          color: 'red',
+        });
+        return;
+      }
+
       const url = await archiveService.getFileUrl(archive.file_path);
       window.open(url, '_blank');
     } catch (error) {

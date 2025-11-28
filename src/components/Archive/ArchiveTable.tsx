@@ -46,15 +46,22 @@ export function ArchiveTable({ archives, onEdit, onDelete, onDownload, showActio
               <Text size="sm">{formatFileSize(archive.file_size)}</Text>
             </Table.Td>
             <Table.Td>
-              {archive.is_public ? (
-                <Badge color="green" variant="light">
-                  Publik
-                </Badge>
-              ) : (
-                <Badge color="gray" variant="light">
-                  Privat
-                </Badge>
-              )}
+              <Group gap={4}>
+                {archive.is_public ? (
+                  <Badge color="green" variant="light">
+                    Publik
+                  </Badge>
+                ) : (
+                  <Badge color="gray" variant="light">
+                    Privat
+                  </Badge>
+                )}
+                {archive.external_url && (
+                  <Badge color="blue" variant="light">
+                    Drive
+                  </Badge>
+                )}
+              </Group>
             </Table.Td>
             <Table.Td>
               <Text size="sm">{formatDate(archive.created_at)}</Text>
