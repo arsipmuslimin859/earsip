@@ -99,6 +99,8 @@ export function CustomTablesPage() {
 
   const handleBackToList = () => {
     setSelectedTable(null);
+    setDefinitionModalOpen(false);
+    setEditingTable(null);
   };
 
   if (selectedTable) {
