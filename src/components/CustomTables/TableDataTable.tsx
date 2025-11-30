@@ -11,7 +11,7 @@ import {
   Paper,
   Pagination,
 } from '@mantine/core';
-import { IconPlus, IconEdit, IconTrash } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconExternalLink } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { customTableService, CustomTable, TableRow } from '../../services/customTableService';
 import { TableDataModal } from './TableDataModal';
@@ -116,6 +116,20 @@ export function TableDataTable({ table, onDataChange }: TableDataTableProps) {
         return new Date(value).toLocaleDateString('id-ID');
       case 'number':
         return Number(value).toLocaleString('id-ID');
+      case 'link':
+        return (
+          <ActionIcon
+            variant="light"
+            color="blue"
+            component="a"
+            href={value}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={`Buka link: ${value}`}
+          >
+            <IconExternalLink size={16} />
+          </ActionIcon>
+        );
       default:
         return String(value);
     }

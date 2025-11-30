@@ -85,6 +85,18 @@ export function TableDataModal({ opened, onClose, table, row, onSaved }: TableDa
               return false;
             }
             break;
+          case 'link':
+            try {
+              new URL(value);
+            } catch {
+              notifications.show({
+                title: 'Error',
+                message: `Field "${column.name}" harus berupa URL yang valid (contoh: https://example.com)`,
+                color: 'red',
+              });
+              return false;
+            }
+            break;
         }
       }
     }
@@ -204,6 +216,18 @@ export function TableDataModal({ opened, onClose, table, row, onSaved }: TableDa
             onChange={(val) => handleFieldChange(column.id, val)}
             required={isRequired}
             searchable
+          />
+        );
+
+      case 'link':
+        return (
+          <TextInput
+            label={column.name}
+            placeholder="Masukkan URL (contoh: https://example.com)"
+            value={value || ''}
+            onChange={(e) => handleFieldChange(column.id, e.target.value)}
+            required={isRequired}
+            type="url"
           />
         );
 

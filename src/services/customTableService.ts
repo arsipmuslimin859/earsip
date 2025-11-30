@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 export interface TableColumn {
   id: string;
   name: string;
-  type: 'text' | 'number' | 'date' | 'boolean' | 'select';
+  type: 'text' | 'number' | 'date' | 'boolean' | 'select' | 'link';
   required: boolean;
   options?: string[]; // for select type
 }

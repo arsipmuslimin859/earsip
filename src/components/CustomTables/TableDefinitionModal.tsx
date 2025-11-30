@@ -30,6 +30,7 @@ const COLUMN_TYPES = [
   { value: 'date', label: 'Tanggal' },
   { value: 'boolean', label: 'Ya/Tidak' },
   { value: 'select', label: 'Pilihan' },
+  { value: 'link', label: 'Link' },
 ];
 
 export function TableDefinitionModal({ opened, onClose, table, onSaved }: TableDefinitionModalProps) {

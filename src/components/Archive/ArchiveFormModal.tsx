@@ -26,6 +26,8 @@ interface ArchiveFormModalProps {
   onSave: (data: ArchiveFormData) => Promise<void>;
   renderAsModal?: boolean;
   hasUploadedFile?: boolean;
+  initialStorageOption?: 'local' | 'drive';
+  initialExternalLink?: string;
 }
 
 export interface ArchiveFormData {
@@ -45,6 +47,8 @@ export function ArchiveFormModal({
   onSave,
   renderAsModal = true,
   hasUploadedFile = false,
+  initialStorageOption,
+  initialExternalLink,
 }: ArchiveFormModalProps) {
   const { config } = useConfigStore();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -102,13 +106,13 @@ export function ArchiveFormModal({
           description: '',
           category_id: '',
           is_public: false,
-          storageOption: hasUploadedFile ? 'local' : 'drive',
-          externalLink: '',
+          storageOption: initialStorageOption || (hasUploadedFile ? 'local' : 'drive'),
+          externalLink: initialExternalLink || '',
           metadata: initializedMetadata,
         });
       }
     }
-  }, [opened, archive, config.metadataSchema, renderAsModal]);
+  }, [opened, archive, config.metadataSchema, renderAsModal, initialStorageOption, initialExternalLink]);
 
   const loadCategories = async () => {
     try {
@@ -144,7 +148,7 @@ export function ArchiveFormModal({
       }
     }
 
-    if (formData.storageOption === 'drive' && !formData.externalLink.trim()) {
+    if (formData.storageOption === 'drive' && renderAsModal && !formData.externalLink.trim()) {
       setError('Link Drive wajib diisi untuk opsi penyimpanan Drive');
       return;
     }
@@ -245,20 +249,22 @@ export function ArchiveFormModal({
           onChange={(e) => setFormData(prev => ({ ...prev, is_public: e.currentTarget.checked }))}
         />
 
-        <Stack gap="xs">
-          <Text fw={600}>Metode Penyimpanan</Text>
-          <SegmentedControl
-            value={formData.storageOption}
-            onChange={(value) => {
-              setFormData(prev => ({ ...prev, storageOption: value as 'local' | 'drive' }));
-              setError(null);
-            }}
-            data={[
-              { label: 'Upload ke Sistem', value: 'local', disabled: !canUseLocal },
-              { label: 'Link Drive', value: 'drive' },
-            ]}
-          />
-        </Stack>
+        {!renderAsModal && (
+          <Stack gap="xs">
+            <Text fw={600}>Metode Penyimpanan</Text>
+            <SegmentedControl
+              value={formData.storageOption}
+              onChange={(value) => {
+                setFormData(prev => ({ ...prev, storageOption: value as 'local' | 'drive' }));
+                setError(null);
+              }}
+              data={[
+                { label: 'Upload ke Sistem', value: 'local', disabled: !canUseLocal },
+                { label: 'Link Drive', value: 'drive' },
+              ]}
+            />
+          </Stack>
+        )}
 
         {showLocalWarning && (
           <Alert icon={<IconAlertCircle size={16} />} color="yellow" title="Upload diperlukan">
@@ -266,7 +272,7 @@ export function ArchiveFormModal({
           </Alert>
         )}
 
-        {formData.storageOption === 'drive' && (
+        {formData.storageOption === 'drive' && renderAsModal && (
           <TextInput
             label="Link Drive"
             placeholder="https://drive.google.com/..."

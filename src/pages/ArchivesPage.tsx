@@ -52,6 +52,8 @@ export function ArchivesPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [activeTab, setActiveTab] = useState<string>('upload');
+  const [storageOption, setStorageOption] = useState<'local' | 'drive'>('local');
+  const [externalLink, setExternalLink] = useState('');
 
   useEffect(() => {
     loadData();
@@ -169,6 +171,8 @@ export function ArchivesPage() {
 
   const handleAddNew = () => {
     setSelectedFile(null);
+    setStorageOption('local');
+    setExternalLink('');
     setActiveTab('upload');
     setCreateModalOpened(true);
   };
@@ -190,7 +194,7 @@ export function ArchivesPage() {
       return;
     }
 
-    const useDrive = formData.storageOption === 'drive';
+    const useDrive = storageOption === 'drive';
 
     if (!useDrive && !selectedFile) {
       notifications.show({
@@ -211,7 +215,7 @@ export function ArchivesPage() {
       return;
     }
 
-    if (useDrive && (!formData.externalLink || formData.externalLink.trim() === '')) {
+    if (useDrive && (!externalLink || externalLink.trim() === '')) {
       notifications.show({
         title: 'Validasi',
         message: 'Link Drive wajib diisi saat memilih opsi penyimpanan Drive',
@@ -249,7 +253,7 @@ export function ArchivesPage() {
         file_name: fileName,
         file_size: fileSize,
         file_type: fileType,
-        external_url: useDrive ? formData.externalLink.trim() : null,
+        external_url: useDrive ? externalLink.trim() : null,
         is_public: formData.is_public || false,
         uploaded_by: user.id,
       }) as Archive;
@@ -297,6 +301,8 @@ export function ArchivesPage() {
       // Reset modal state
       setCreateModalOpened(false);
       setSelectedFile(null);
+      setStorageOption('local');
+      setExternalLink('');
       setActiveTab('upload');
     } catch (error) {
       console.error('Error creating archive:', error);
@@ -485,6 +491,8 @@ export function ArchivesPage() {
           onClose={() => {
             setCreateModalOpened(false);
             setSelectedFile(null);
+            setStorageOption('local');
+            setExternalLink('');
             setActiveTab('upload');
           }}
           title="Tambah Arsip Baru"
@@ -502,31 +510,47 @@ export function ArchivesPage() {
                 selectedFile={selectedFile}
                 uploading={uploading}
                 uploadProgress={uploadProgress}
+                storageOption={storageOption}
+                onStorageOptionChange={setStorageOption}
+                externalLink={externalLink}
+                onExternalLinkChange={setExternalLink}
               />
             </Tabs.Panel>
 
             <Tabs.Panel value="details" pt="md">
-              {selectedFile ? (
+              {(selectedFile || storageOption === 'drive') ? (
                 <ArchiveFormModal
                   opened={true} // Keep opened true so form initializes
                   onClose={() => {
                     // This will be handled by the modal's onClose
                     setCreateModalOpened(false);
                     setSelectedFile(null);
+                    setStorageOption('local');
+                    setExternalLink('');
                     setActiveTab('upload');
                   }}
                   onSave={async (formData) => {
-                    await handleCreateArchive(formData);
+                    // Override formData with current storage option and external link
+                    const updatedFormData = {
+                      ...formData,
+                      storageOption,
+                      externalLink,
+                    };
+                    await handleCreateArchive(updatedFormData);
                     // Reset after successful save
                     setSelectedFile(null);
+                    setStorageOption('local');
+                    setExternalLink('');
                     setActiveTab('upload');
                   }}
                   hasUploadedFile={Boolean(selectedFile)}
                   renderAsModal={false}
+                  initialStorageOption={storageOption}
+                  initialExternalLink={externalLink}
                 />
               ) : (
                 <Text c="dimmed" ta="center" py="xl">
-                  Silakan upload file terlebih dahulu
+                  Silakan upload file atau pilih Link Drive terlebih dahulu
                 </Text>
               )}
             </Tabs.Panel>
