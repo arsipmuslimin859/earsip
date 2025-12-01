@@ -1,5 +1,5 @@
 import { Table, Badge, Group, ActionIcon, Text } from '@mantine/core';
-import { IconEdit, IconTrash, IconDownload } from '@tabler/icons-react';
+import { IconEdit, IconTrash, IconDownload, IconLink } from '@tabler/icons-react';
 import type { Archive } from '../../types';
 import { formatFileSize, formatDate } from '../../utils/formatters';
 
@@ -74,8 +74,19 @@ export function ArchiveTable({ archives, onEdit, onDelete, onDownload, showActio
                       variant="subtle"
                       color="blue"
                       onClick={() => onDownload(archive)}
+                      title="Download arsip"
                     >
                       <IconDownload size={16} />
+                    </ActionIcon>
+                  )}
+                  {archive.external_url && (
+                    <ActionIcon
+                      variant="subtle"
+                      color="green"
+                      onClick={() => window.open(archive.external_url!, '_blank', 'noopener,noreferrer')}
+                      title="Buka link Drive"
+                    >
+                      <IconLink size={16} />
                     </ActionIcon>
                   )}
                   {onEdit && (
@@ -83,6 +94,7 @@ export function ArchiveTable({ archives, onEdit, onDelete, onDownload, showActio
                       variant="subtle"
                       color="blue"
                       onClick={() => onEdit(archive)}
+                      title="Edit arsip"
                     >
                       <IconEdit size={16} />
                     </ActionIcon>
@@ -92,6 +104,7 @@ export function ArchiveTable({ archives, onEdit, onDelete, onDownload, showActio
                       variant="subtle"
                       color="red"
                       onClick={() => onDelete(archive)}
+                      title="Hapus arsip"
                     >
                       <IconTrash size={16} />
                     </ActionIcon>

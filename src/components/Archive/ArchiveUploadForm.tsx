@@ -3,6 +3,8 @@ import { Dropzone, FileWithPath } from '@mantine/dropzone';
 import { Group, Text, Progress, Stack, Paper, CloseButton, SegmentedControl, TextInput, Alert } from '@mantine/core';
 import { IconUpload, IconFile, IconX, IconAlertCircle, IconLink } from '@tabler/icons-react';
 import { useConfigStore } from '../../stores/configStore';
+import { isValidUrl, isValidFileType, sanitizeInput, detectXSS } from '../../utils/security';
+import { notifications } from '@mantine/notifications';
 
 interface ArchiveUploadFormProps {
   onFileSelect: (file: File | null) => void;
@@ -29,7 +31,39 @@ export function ArchiveUploadForm({
 
   const handleDrop = (files: FileWithPath[]) => {
     if (files.length > 0) {
-      onFileSelect(files[0]);
+      const file = files[0];
+
+      // Security validation
+      if (!isValidFileType(file, config.storage.allowedFileTypes)) {
+        notifications.show({
+          title: 'File Tidak Valid',
+          message: `Tipe file ${file.type} tidak diizinkan. File yang diizinkan: ${config.storage.allowedFileTypes.join(', ')}`,
+          color: 'red'
+        });
+        return;
+      }
+
+      // Check file name for security
+      if (!isValidFileName(file.name)) {
+        notifications.show({
+          title: 'Nama File Tidak Valid',
+          message: 'Nama file mengandung karakter yang tidak diizinkan',
+          color: 'red'
+        });
+        return;
+      }
+
+      // Check for XSS in filename
+      if (detectXSS(file.name)) {
+        notifications.show({
+          title: 'File Tidak Aman',
+          message: 'Nama file mengandung konten yang tidak aman',
+          color: 'red'
+        });
+        return;
+      }
+
+      onFileSelect(file);
     }
   };
 
@@ -122,13 +156,25 @@ export function ArchiveUploadForm({
           placeholder="https://drive.google.com/file/d/.../view"
           leftSection={<IconLink size={16} />}
           value={externalLink}
-          onChange={(e) => onExternalLinkChange?.(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            // Basic sanitization
+            const sanitized = sanitizeInput(value);
+            onExternalLinkChange?.(sanitized);
+          }}
           description="Masukkan link Google Drive yang dapat diakses publik"
+          error={externalLink && !isValidUrl(externalLink) ? 'Format URL tidak valid' : undefined}
         />
 
-        {externalLink && !externalLink.includes('drive.google.com') && (
+        {externalLink && isValidUrl(externalLink) && !externalLink.includes('drive.google.com') && (
           <Alert icon={<IconAlertCircle size={16} />} color="yellow" title="Perhatian">
             Pastikan link Google Drive dapat diakses oleh orang lain (set ke "Anyone with the link can view")
+          </Alert>
+        )}
+
+        {externalLink && detectXSS(externalLink) && (
+          <Alert icon={<IconAlertCircle size={16} />} color="red" title="Link Tidak Aman">
+            Link mengandung konten yang tidak aman
           </Alert>
         )}
       </Stack>

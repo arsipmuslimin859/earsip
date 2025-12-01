@@ -12,6 +12,7 @@ import {
 import { DateInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
 import { customTableService, CustomTable, TableRow } from '../../services/customTableService';
+import { sanitizeInput, isValidUrl, detectXSS } from '../../utils/security';
 
 interface TableDataModalProps {
   opened: boolean;
@@ -41,9 +42,26 @@ export function TableDataModal({ opened, onClose, table, row, onSaved }: TableDa
   }, [opened, row, table.columns]);
 
   const handleFieldChange = (columnId: string, value: any) => {
+    // Sanitize input for security
+    let sanitizedValue = value;
+
+    if (typeof value === 'string') {
+      sanitizedValue = sanitizeInput(value);
+
+      // Check for XSS attempts
+      if (detectXSS(sanitizedValue)) {
+        notifications.show({
+          title: 'Input Tidak Aman',
+          message: 'Input mengandung konten yang tidak diizinkan',
+          color: 'red'
+        });
+        return;
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
-      [columnId]: value,
+      [columnId]: sanitizedValue,
     }));
   };
 
@@ -86,12 +104,10 @@ export function TableDataModal({ opened, onClose, table, row, onSaved }: TableDa
             }
             break;
           case 'link':
-            try {
-              new URL(value);
-            } catch {
+            if (!isValidUrl(value)) {
               notifications.show({
                 title: 'Error',
-                message: `Field "${column.name}" harus berupa URL yang valid (contoh: https://example.com)`,
+                message: `Field "${column.name}" harus berupa URL yang valid dan aman (contoh: https://example.com)`,
                 color: 'red',
               });
               return false;

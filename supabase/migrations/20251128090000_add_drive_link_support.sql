@@ -6,3 +6,6 @@ ALTER TABLE archives
 ALTER TABLE archives
   ALTER COLUMN file_path DROP NOT NULL;
 
+-- Add is_public column to custom_tables for public visibility
+ALTER TABLE custom_tables
+  ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT false;

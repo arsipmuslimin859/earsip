@@ -1,5 +1,5 @@
 import { Card, Text, Badge, Group, Stack, ActionIcon, Menu } from '@mantine/core';
-import { IconFileText, IconDownload, IconEdit, IconTrash, IconDots } from '@tabler/icons-react';
+import { IconFileText, IconDownload, IconEdit, IconTrash, IconDots, IconLink } from '@tabler/icons-react';
 import type { Archive } from '../../types';
 import { formatFileSize, formatDate } from '../../utils/formatters';
 
@@ -35,6 +35,14 @@ export function ArchiveCard({ archive, onEdit, onDelete, onDownload, showActions
                   Download
                 </Menu.Item>
               )}
+              {archive.external_url && (
+                <Menu.Item
+                  leftSection={<IconLink size={14} />}
+                  onClick={() => window.open(archive.external_url!, '_blank', 'noopener,noreferrer')}
+                >
+                  Buka Link Drive
+                </Menu.Item>
+              )}
               {onEdit && (
                 <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => onEdit(archive)}>
                   Edit
@@ -66,6 +74,11 @@ export function ArchiveCard({ archive, onEdit, onDelete, onDownload, showActions
           {archive.is_public && (
             <Badge color="green" variant="light">
               Publik
+            </Badge>
+          )}
+          {archive.external_url && (
+            <Badge color="blue" variant="light">
+              Drive
             </Badge>
           )}
         </Group>

@@ -36,6 +36,7 @@ const COLUMN_TYPES = [
 export function TableDefinitionModal({ opened, onClose, table, onSaved }: TableDefinitionModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
   const [columns, setColumns] = useState<TableColumn[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -44,10 +45,12 @@ export function TableDefinitionModal({ opened, onClose, table, onSaved }: TableD
       if (table) {
         setName(table.name);
         setDescription(table.description || '');
+        setIsPublic(table.is_public);
         setColumns(table.columns);
       } else {
         setName('');
         setDescription('');
+        setIsPublic(false);
         setColumns([]);
       }
     }
@@ -109,6 +112,7 @@ export function TableDefinitionModal({ opened, onClose, table, onSaved }: TableD
       const tableData = {
         name: name.trim(),
         description: description.trim(),
+        is_public: isPublic,
         columns,
       };
 
@@ -165,6 +169,13 @@ export function TableDefinitionModal({ opened, onClose, table, onSaved }: TableD
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           minRows={2}
+        />
+
+        <Checkbox
+          label="Tabel Publik"
+          description="Tabel dapat diakses tanpa login"
+          checked={isPublic}
+          onChange={(e) => setIsPublic(e.currentTarget.checked)}
         />
 
         <Divider label="Kolom Struktur" />

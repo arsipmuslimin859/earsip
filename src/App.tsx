@@ -7,6 +7,7 @@ import { LoginPage } from './pages/LoginPage';
 import { HomePage } from './pages/HomePage';
 import { DashboardPage } from './pages/DashboardPage';
 import { PublicArchivePage } from './pages/PublicArchivePage';
+import { PublicCustomTablesPage } from './pages/PublicCustomTablesPage';
 import { ArchivesPage } from './pages/ArchivesPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { TagsPage } from './pages/TagsPage';
@@ -51,6 +52,7 @@ function AppRoutes({ user }: { user: User | null }) {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/public-archive" element={<PublicArchivePage />} />
+      <Route path="/public-custom-tables" element={<PublicCustomTablesPage />} />
       {user ? (
         <>
           <Route element={<PrivateLayout />}>

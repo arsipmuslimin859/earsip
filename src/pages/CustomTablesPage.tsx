@@ -150,6 +150,7 @@ export function CustomTablesPage() {
                 <Table.Th>Nama Struktur</Table.Th>
                 <Table.Th>Deskripsi</Table.Th>
                 <Table.Th>Kolom</Table.Th>
+                <Table.Th>Status</Table.Th>
                 <Table.Th>Dibuat</Table.Th>
                 <Table.Th>Aksi</Table.Th>
               </Table.Tr>
@@ -166,6 +167,17 @@ export function CustomTablesPage() {
                   <Table.Td>{table.description || '-'}</Table.Td>
                   <Table.Td>
                     <Badge variant="light">{table.columns.length} kolom</Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    {table.is_public ? (
+                      <Badge color="green" variant="light">
+                        Publik
+                      </Badge>
+                    ) : (
+                      <Badge color="gray" variant="light">
+                        Privat
+                      </Badge>
+                    )}
                   </Table.Td>
                   <Table.Td>
                     {new Date(table.created_at).toLocaleDateString('id-ID')}

@@ -1,14 +1,52 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Modular Archive Management System</title>
-    <meta property="og:image" content="https://bolt.new/static/og_default.png">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
-</head>
+
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()" />
+
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://*.supabase.com;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com;
+      img-src 'self' data: https: blob:;
+      connect-src 'self' https://*.supabase.co https://*.supabase.com wss://*.supabase.co wss://*.supabase.com;
+      frame-src 'none';
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+    " />
+
+    <title>Sistem Manajemen Arsip - Aman & Terpercaya</title>
+
+    <!-- SEO & Social Media -->
+    <meta name="description" content="Sistem Manajemen Arsip Modern dengan keamanan tinggi untuk pengelolaan dokumen penting" />
+    <meta name="keywords" content="arsip, dokumen, manajemen, keamanan, digital" />
+    <meta name="author" content="Sistem Manajemen Arsip" />
+    <meta name="robots" content="noindex, nofollow" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Sistem Manajemen Arsip" />
+    <meta property="og:description" content="Sistem Manajemen Arsip Modern dengan keamanan tinggi" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/vite.svg" />
+    <meta property="og:site_name" content="Sistem Manajemen Arsip" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Sistem Manajemen Arsip" />
+    <meta name="twitter:description" content="Sistem Manajemen Arsip Modern dengan keamanan tinggi" />
+    <meta name="twitter:image" content="/vite.svg" />
+  </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

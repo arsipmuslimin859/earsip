@@ -12,6 +12,7 @@ export interface CustomTable {
   id: string;
   name: string;
   description?: string;
+  is_public: boolean;
   columns: TableColumn[];
   created_at: string;
   updated_at: string;
@@ -56,6 +57,7 @@ export const customTableService = {
           id: table.id,
           name: table.name,
           description: table.description || undefined,
+          is_public: table.is_public || false,
           columns: (columns || []).map((col) => ({
             id: col.id,
             name: col.name,
@@ -80,6 +82,7 @@ export const customTableService = {
       .insert({
         name: table.name,
         description: table.description || null,
+        is_public: table.is_public || false,
       })
       .select()
       .single();
@@ -117,6 +120,7 @@ export const customTableService = {
       id: newTable.id,
       name: newTable.name,
       description: newTable.description || undefined,
+      is_public: newTable.is_public || false,
       columns: table.columns,
       created_at: newTable.created_at,
       updated_at: newTable.updated_at,
@@ -129,6 +133,7 @@ export const customTableService = {
     const tableUpdates: any = {};
     if (updates.name !== undefined) tableUpdates.name = updates.name;
     if (updates.description !== undefined) tableUpdates.description = updates.description || null;
+    if (updates.is_public !== undefined) tableUpdates.is_public = updates.is_public;
     tableUpdates.updated_at = new Date().toISOString();
 
     if (Object.keys(tableUpdates).length > 0) {
