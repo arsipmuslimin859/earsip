@@ -1,5 +1,6 @@
-import { Table, Badge, Group, ActionIcon, Text } from '@mantine/core';
+import { Table, Badge, Group, ActionIcon, Text, Card, Stack, ScrollArea } from '@mantine/core';
 import { IconEdit, IconTrash, IconDownload, IconLink } from '@tabler/icons-react';
+import { useMediaQuery } from '@mantine/hooks';
 import type { Archive } from '../../types';
 import { formatFileSize, formatDate } from '../../utils/formatters';
 
@@ -12,7 +13,107 @@ interface ArchiveTableProps {
 }
 
 export function ArchiveTable({ archives, onEdit, onDelete, onDownload, showActions = true }: ArchiveTableProps) {
-  return (
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  return isMobile ? (
+    <ScrollArea style={{ overflowX: 'auto' }}>
+      <div style={{ display: 'flex', gap: '1rem', padding: '1rem' }}>
+        {archives.map((archive) => (
+          <Card key={archive.id} withBorder style={{ minWidth: 300, flexShrink: 0 }}>
+            <Stack gap="sm">
+              <div>
+                <Text fw={500}>{archive.title}</Text>
+                {archive.description && (
+                  <Text size="xs" c="dimmed" lineClamp={2}>
+                    {archive.description}
+                  </Text>
+                )}
+              </div>
+              <div>
+                <Text size="sm" fw={500}>Kategori:</Text>
+                {archive.category && (
+                  <Badge color={archive.category.color} variant="light" size="sm">
+                    {archive.category.name}
+                  </Badge>
+                )}
+              </div>
+              <div>
+                <Text size="sm" fw={500}>Ukuran:</Text>
+                <Text size="sm">{formatFileSize(archive.file_size)}</Text>
+              </div>
+              <div>
+                <Text size="sm" fw={500}>Status:</Text>
+                <Group gap={4} mt={4}>
+                  {archive.is_public ? (
+                    <Badge color="green" variant="light" size="sm">
+                      Publik
+                    </Badge>
+                  ) : (
+                    <Badge color="gray" variant="light" size="sm">
+                      Privat
+                    </Badge>
+                  )}
+                  {archive.external_url && (
+                    <Badge color="blue" variant="light" size="sm">
+                      Drive
+                    </Badge>
+                  )}
+                </Group>
+              </div>
+              <div>
+                <Text size="sm" fw={500}>Tanggal Upload:</Text>
+                <Text size="sm">{formatDate(archive.created_at)}</Text>
+              </div>
+              {showActions && (
+                <Group gap="xs" mt="sm">
+                  {onDownload && (
+                    <ActionIcon
+                      variant="light"
+                      color="blue"
+                      onClick={() => onDownload(archive)}
+                      title="Download arsip"
+                    >
+                      <IconDownload size={16} />
+                    </ActionIcon>
+                  )}
+                  {archive.external_url && (
+                    <ActionIcon
+                      variant="light"
+                      color="green"
+                      onClick={() => window.open(archive.external_url!, '_blank', 'noopener,noreferrer')}
+                      title="Buka link Drive"
+                    >
+                      <IconLink size={16} />
+                    </ActionIcon>
+                  )}
+                  {onEdit && (
+                    <ActionIcon
+                      variant="light"
+                      color="blue"
+                      onClick={() => onEdit(archive)}
+                      title="Edit arsip"
+                    >
+                      <IconEdit size={16} />
+                    </ActionIcon>
+                  )}
+                  {onDelete && (
+                    <ActionIcon
+                      variant="light"
+                      color="red"
+                      onClick={() => onDelete(archive)}
+                      title="Hapus arsip"
+                    >
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  )}
+                </Group>
+              )}
+            </Stack>
+          </Card>
+        ))}
+      </div>
+    </ScrollArea>
+  ) : (
     <Table striped highlightOnHover>
       <Table.Thead>
         <Table.Tr>

@@ -10,7 +10,11 @@ import {
   ScrollArea,
   Paper,
   Pagination,
+  SimpleGrid,
+  Stack,
+  Divider,
 } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { IconPlus, IconEdit, IconTrash, IconExternalLink } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { customTableService, CustomTable, TableRow } from '../../services/customTableService';
@@ -32,6 +36,7 @@ export function TableDataTable({ table, onDataChange }: TableDataTableProps) {
   const [editingRow, setEditingRow] = useState<TableRow | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState<TableRow | null>(null);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const loadData = async () => {
     try {
@@ -144,29 +149,22 @@ export function TableDataTable({ table, onDataChange }: TableDataTableProps) {
         </Button>
       </Group>
 
-      <ScrollArea>
-        <Table>
-          <Table.Thead>
-            <Table.Tr>
-              {table.columns.map((column) => (
-                <Table.Th key={column.id}>
-                  {column.name}
-                  {column.required && <Text span c="red" ml={4}>*</Text>}
-                </Table.Th>
-              ))}
-              <Table.Th style={{ width: 100 }}>Aksi</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
+      {isMobile ? (
+        <ScrollArea style={{ overflowX: 'auto' }}>
+          <div style={{ display: 'flex', gap: '1rem', padding: '1rem' }}>
             {data.map((row) => (
-              <Table.Tr key={row.id}>
-                {table.columns.map((column) => (
-                  <Table.Td key={column.id}>
-                    {renderCellValue(row, column)}
-                  </Table.Td>
-                ))}
-                <Table.Td>
-                  <Group gap="xs">
+              <Card key={row.id} withBorder style={{ minWidth: 300, flexShrink: 0 }}>
+                <Stack gap="sm">
+                  {table.columns.map((column) => (
+                    <div key={column.id}>
+                      <Text fw={500} size="sm">
+                        {column.name}
+                        {column.required && <Text span c="red" ml={4}>*</Text>}
+                      </Text>
+                      <Text size="sm">{renderCellValue(row, column)}</Text>
+                    </div>
+                  ))}
+                  <Group gap="xs" mt="sm">
                     <ActionIcon
                       variant="light"
                       color="orange"
@@ -184,12 +182,59 @@ export function TableDataTable({ table, onDataChange }: TableDataTableProps) {
                       <IconTrash size={16} />
                     </ActionIcon>
                   </Group>
-                </Table.Td>
-              </Table.Tr>
+                </Stack>
+              </Card>
             ))}
-          </Table.Tbody>
-        </Table>
-      </ScrollArea>
+          </div>
+        </ScrollArea>
+      ) : (
+        <ScrollArea>
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                {table.columns.map((column) => (
+                  <Table.Th key={column.id}>
+                    {column.name}
+                    {column.required && <Text span c="red" ml={4}>*</Text>}
+                  </Table.Th>
+                ))}
+                <Table.Th style={{ width: 100 }}>Aksi</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {data.map((row) => (
+                <Table.Tr key={row.id}>
+                  {table.columns.map((column) => (
+                    <Table.Td key={column.id}>
+                      {renderCellValue(row, column)}
+                    </Table.Td>
+                  ))}
+                  <Table.Td>
+                    <Group gap="xs">
+                      <ActionIcon
+                        variant="light"
+                        color="orange"
+                        onClick={() => handleEditRow(row)}
+                        title="Edit"
+                      >
+                        <IconEdit size={16} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="light"
+                        color="red"
+                        onClick={() => handleDeleteRow(row)}
+                        title="Hapus"
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </ScrollArea>
+      )}
 
       {total > pageSize && (
         <Group justify="space-between" mt="md">
