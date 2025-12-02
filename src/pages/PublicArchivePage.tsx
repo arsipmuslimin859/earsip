@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Title,
@@ -15,9 +15,8 @@ import {
   Skeleton,
   Card,
   Badge,
-  ScrollArea,
 } from '@mantine/core';
-import { IconSearch, IconArchive, IconDownload } from '@tabler/icons-react';
+import { IconSearch, IconArchive } from '@tabler/icons-react';
 import { ArchiveCard } from '../components/Archive/ArchiveCard';
 import { archiveService } from '../services/archiveService';
 import { categoryService } from '../services/categoryService';

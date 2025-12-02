@@ -320,7 +320,7 @@ export const archiveService = {
       console.log(`🔍 Verifying bucket "${BUCKET_NAME}" status...`);
 
       // 1. Check if bucket exists by listing files
-      const { data: files, error: listError } = await supabase.storage
+      const { error: listError } = await supabase.storage
         .from(BUCKET_NAME)
         .list('', { limit: 1 });
 

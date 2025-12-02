@@ -60,7 +60,7 @@ const ICON_OPTIONS = [
   { label: '# Tag', value: 'IconHash', icon: IconHash },
 ];
 
-const iconComponentMap = ICON_OPTIONS.reduce<Record<string, ComponentType<{ size?: number }>>>(
+const iconComponentMap = ICON_OPTIONS.reduce<Record<string, ComponentType<any>>>(
   (acc, option) => {
     acc[option.value] = option.icon;
     return acc;
@@ -301,7 +301,7 @@ export function CategoriesPage() {
                             radius="md"
                             style={{ backgroundColor: `${category.color}22` }}
                           >
-                            <IconComponent size={20} color={category.color} />
+                            <IconComponent size={20} />
                           </Paper>
                           <Stack gap={0} justify="center">
                             <Text fw={600}>{category.name}</Text>

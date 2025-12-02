@@ -6,7 +6,6 @@ import {
   Stack,
   TextInput,
   Group,
-  Select,
   SimpleGrid,
   Loader,
   Center,

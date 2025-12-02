@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Dropzone, FileWithPath } from '@mantine/dropzone';
 import { Group, Text, Progress, Stack, Paper, CloseButton, SegmentedControl, TextInput, Alert } from '@mantine/core';
 import { IconUpload, IconFile, IconX, IconAlertCircle, IconLink } from '@tabler/icons-react';
@@ -43,15 +42,6 @@ export function ArchiveUploadForm({
         return;
       }
 
-      // Check file name for security
-      if (!isValidFileName(file.name)) {
-        notifications.show({
-          title: 'Nama File Tidak Valid',
-          message: 'Nama file mengandung karakter yang tidak diizinkan',
-          color: 'red'
-        });
-        return;
-      }
 
       // Check for XSS in filename
       if (detectXSS(file.name)) {

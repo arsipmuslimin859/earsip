@@ -1,10 +1,3 @@
-import { archiveService } from './archiveService';
-import { categoryService } from './categoryService';
-import { tagService } from './tagService';
-import type { Archive } from '../types';
-import institutionConfig from '../config/institution.config.json';
-
-const BUCKET_NAME = institutionConfig.storage.bucketName || 'archives';
 
 export interface DashboardStats {
   totalArchives: number;

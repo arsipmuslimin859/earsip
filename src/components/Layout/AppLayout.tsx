@@ -1,6 +1,6 @@
-import { AppShell, Burger, Group, Text, Button, useMantineColorScheme, ActionIcon } from '@mantine/core';
+import { AppShell, Burger, Group, Text, useMantineColorScheme, ActionIcon, Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconMoon, IconSun, IconLogout, IconHome, IconArchive, IconFolder, IconTags, IconActivity, IconWorld, IconTable } from '@tabler/icons-react';
+import { IconMoon, IconSun, IconLogout, IconHome, IconArchive, IconFolder, IconTags, IconActivity, IconWorld, IconTable, IconDotsVertical } from '@tabler/icons-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useConfigStore } from '../../stores/configStore';
 import { Navigation } from './Navigation';
@@ -49,7 +49,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <AppShell
       header={{ height: 60 }}
       navbar={{
-        width: 250,
+        width: { base: '100%', sm: 250 },
         breakpoint: 'sm',
         collapsed: { mobile: !opened },
       }}
@@ -74,19 +74,28 @@ export function AppLayout({ children }: AppLayoutProps) {
             </ActionIcon>
 
             {user && (
-              <Button
-                variant="subtle"
-                leftSection={<IconLogout size={16} />}
-                onClick={handleSignOut}
-              >
-                Keluar
-              </Button>
+              <Menu shadow="md" width={200}>
+                <Menu.Target>
+                  <ActionIcon variant="default" size="lg">
+                    <IconDotsVertical size={20} />
+                  </ActionIcon>
+                </Menu.Target>
+
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<IconLogout size={16} />}
+                    onClick={handleSignOut}
+                  >
+                    Keluar
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
             )}
           </Group>
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md">
+      <AppShell.Navbar p={{ base: 'lg', sm: 'md' }}>
         <Navigation
           links={navLinks}
           activePath={activePath}
@@ -97,6 +106,10 @@ export function AppLayout({ children }: AppLayoutProps) {
       </AppShell.Navbar>
 
       <AppShell.Main>{children}</AppShell.Main>
+
+      <AppShell.Footer p="sm" style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--mantine-color-dimmed)' }}>
+        Dibuat oleh Muhammad Irfan, lulusan tahun 2021
+      </AppShell.Footer>
     </AppShell>
   );
 }

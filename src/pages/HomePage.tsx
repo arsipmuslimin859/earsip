@@ -346,6 +346,62 @@ export function HomePage() {
           )}
         </Transition>
       </Affix>
+
+      {/* Footer */}
+      <Box style={{
+        backgroundColor: '#1f2937',
+        color: 'white',
+        padding: '3rem 0 2rem',
+        marginTop: '4rem'
+      }}>
+        <Container size="xl">
+          <SimpleGrid cols={{ base: 1, md: 3 }} spacing="xl">
+            <Stack align="center" gap="sm">
+              <Title order={4} style={{ color: '#3b82f6' }}>
+                {config.institutionName}
+              </Title>
+              <Text size="sm" style={{ opacity: 0.8, textAlign: 'center' }}>
+                Sistem manajemen arsip digital modern untuk SMAM CILILIN dengan keamanan enterprise dan kemudahan akses.
+              </Text>
+            </Stack>
+
+            <Stack align="center" gap="sm">
+              <Title order={5} style={{ color: '#10b981' }}>
+                Teknologi
+              </Title>
+              <Text size="sm" style={{ opacity: 0.8 }}>
+                Dibangun dengan React, TypeScript, dan Supabase
+              </Text>
+              <Text size="sm" style={{ opacity: 0.6 }}>
+                Framework modern untuk performa optimal
+              </Text>
+            </Stack>
+
+            <Stack align="center" gap="sm">
+              <Title order={5} style={{ color: '#f59e0b' }}>
+                Developer
+              </Title>
+              <Text size="sm" style={{ opacity: 0.8 }}>
+                Dibuat oleh Muhammad Irfan
+              </Text>
+              <Text size="sm" style={{ opacity: 0.6 }}>
+                Lulusan tahun 2021
+              </Text>
+            </Stack>
+          </SimpleGrid>
+
+          <Box style={{
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            marginTop: '2rem',
+            paddingTop: '1rem',
+            textAlign: 'center'
+          }}>
+            <Text size="sm" style={{ opacity: 0.6 }}>
+              © 2025 {config.institutionName}. All rights reserved.
+            </Text>
+          </Box>
+        </Container>
+      </Box>
     </div>
   );
 }

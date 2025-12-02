@@ -17,7 +17,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import { MetadataFormDynamic } from './MetadataFormDynamic';
 import { useConfigStore } from '../../stores/configStore';
 import { categoryService } from '../../services/categoryService';
-import type { Archive, Category, MetadataField } from '../../types';
+import type { Archive, Category } from '../../types';
 
 interface ArchiveFormModalProps {
   opened: boolean;

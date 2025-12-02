@@ -7,7 +7,6 @@ import {
   Group,
   Stack,
   Card,
-  Text,
   ActionIcon,
   Select,
   Checkbox,

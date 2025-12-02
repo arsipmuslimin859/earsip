@@ -6,6 +6,7 @@ import {
   Container,
   Group,
   Loader,
+  Pagination,
   Paper,
   ScrollArea,
   Stack,

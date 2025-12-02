@@ -16,7 +16,7 @@ interface NavigationProps {
 
 export function Navigation({ links, activePath, onNavigate }: NavigationProps) {
   return (
-    <Stack gap="xs">
+    <Stack gap="sm">
       {links.map((link) => {
         const IconComponent = link.icon;
         return (
